@@ -1,0 +1,10 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+anthropic>=0.40
+pydantic>=2.7
+pydantic-settings>=2.4
+python-multipart>=0.0.9
+pypdf>=4.3
+ebooklib>=0.18
+beautifulsoup4>=4.12
+rank-bm25>=0.2.2

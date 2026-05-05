@@ -1,0 +1,1 @@
+"""Multimodal book RAG service."""

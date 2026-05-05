@@ -1,0 +1,17 @@
+CHAPTER ONE: ORIGINS
+
+In the beginning was the word, and the word was tokenized. The earliest treatments of language as data assumed a clean correspondence between the unit of meaning and the unit of computation. A token, in this view, was a word; a word, a token. The two were taken to be coextensive, as though the boundaries of meaning fell tidily on the boundaries of whitespace.
+
+But practice quickly complicated theory. Subword tokenization, born of compression and constrained vocabularies, splintered the word into pieces - "tokenization" becoming "token" + "ization", "unhappiness" becoming "un" + "happi" + "ness". The atom of computation was no longer the atom of meaning.
+
+CHAPTER TWO: CONSEQUENCES
+
+This drift between word and token has consequences. A model that thinks in subwords sees morphology more clearly than one that thinks in words; a model that thinks in bytes sees nothing of words at all, only of sequences. What the model sees, the model knows. What it cannot see, it must reconstruct from context.
+
+The reader who pauses here is invited to consider their own reading. Where, exactly, does a word end? Is "ice cream" one word or two? Is "ain't" a single token of negation, or a contraction of two? The answer changes the architecture of the system that processes it.
+
+CHAPTER THREE: PRACTICE
+
+In practice, modern systems use byte-pair encoding or its cousins. The vocabulary is learned, not given. The boundaries of tokens reflect the statistics of the training corpus, not the intuitions of grammarians. This means that "Claude" may be one token in one model and three in another - a fact that has no bearing on what Claude is, but every bearing on what the model can do with it.
+
+The token, then, is not a word. It is a unit of work, a unit of cost, a unit of attention. Words remain what they were: units of meaning, contested at the edges, defined by use. The two domains overlap but do not coincide. A reader interested in this gap will find it productive ground.
