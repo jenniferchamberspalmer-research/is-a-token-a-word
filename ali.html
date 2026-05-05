@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ali — your reading companion</title>
+<meta name="description" content="Ali, an AI reading companion. Upload a book, chat about it, keep a notebook studio for your ideas." />
+<style>
+  :root {
+    --bg: #f6f3ec;
+    --paper: #fffcf5;
+    --ink: #2b2622;
+    --muted: #7a716a;
+    --line: #e3ddd1;
+    --accent: #b15a3c;
+    --accent-soft: #f0d9cf;
+    --shadow: 0 1px 2px rgba(43, 38, 34, 0.06), 0 4px 12px rgba(43, 38, 34, 0.04);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-size: 16px; line-height: 1.55;
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    margin: 0; font-size: 24px; font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  header .tag { color: var(--muted); font-style: italic; font-size: 14px; }
+  header .spacer { flex: 1; }
+  header select, header button.icon {
+    font-family: inherit; font-size: 14px;
+    padding: 8px 12px; border: 1px solid var(--line);
+    background: var(--paper); border-radius: 6px;
+    color: var(--ink); min-width: 200px;
+    appearance: none; -webkit-appearance: none;
+  }
+  header button.icon {
+    min-width: 0; cursor: pointer; padding: 8px 14px;
+  }
+  header button.icon:hover { border-color: var(--accent); color: var(--accent); }
+
+  nav.tabs {
+    display: flex; border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    position: sticky; top: 0; z-index: 5;
+  }
+  nav.tabs button {
+    flex: 1;
+    padding: 14px 16px;
+    background: transparent; border: none; cursor: pointer;
+    font-family: inherit; font-size: 15px; color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { flex: 1; padding: 20px; max-width: 920px; width: 100%; margin: 0 auto; }
+  section { display: none; }
+  section.active { display: block; }
+
+  /* Upload */
+  .seed {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .seed .title { font-weight: 600; }
+  .seed .meta { color: var(--muted); font-size: 13px; }
+  .seed button {
+    padding: 9px 14px; border: 1px solid var(--accent);
+    background: var(--accent); color: white;
+    font-family: inherit; font-size: 14px; cursor: pointer;
+    border-radius: 6px;
+  }
+  .seed button:hover { background: #98472d; }
+  .seed button:disabled { opacity: 0.6; cursor: progress; }
+  .seed a { color: var(--accent); }
+
+  .drop {
+    border: 2px dashed var(--line);
+    border-radius: 8px;
+    padding: 32px 20px;
+    text-align: center;
+    background: var(--paper);
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+    display: block;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop p { margin: 6px 0; }
+  .drop .hint { color: var(--muted); font-size: 14px; }
+  .drop input[type=file] { display: none; }
+
+  details.paste {
+    margin-top: 16px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+  }
+  details.paste summary { cursor: pointer; color: var(--muted); }
+  details.paste textarea {
+    width: 100%; min-height: 160px; margin-top: 10px;
+    font-family: inherit; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 4px;
+    padding: 8px 10px; background: var(--paper); color: var(--ink);
+    resize: vertical;
+  }
+  details.paste input {
+    width: 100%; margin-top: 8px; padding: 8px 10px;
+    font-family: inherit; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 4px;
+    background: var(--paper); color: var(--ink);
+  }
+  details.paste button {
+    margin-top: 10px; padding: 8px 14px; border: none; border-radius: 4px;
+    background: var(--accent); color: white; cursor: pointer;
+    font-family: inherit; font-size: 14px;
+  }
+
+  .books { margin-top: 24px; display: grid; gap: 10px; }
+  .book-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    box-shadow: var(--shadow);
+  }
+  .book-card .title { font-weight: 600; }
+  .book-card .meta { color: var(--muted); font-size: 13px; }
+  .book-card .spacer { flex: 1; }
+  .book-card button {
+    border: 1px solid var(--line); background: var(--paper);
+    padding: 8px 14px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; font-size: 13px;
+  }
+  .book-card button:hover { border-color: var(--accent); color: var(--accent); }
+  .book-card button.danger:hover { border-color: #b14545; color: #b14545; }
+
+  /* Chat */
+  .chat-wrap {
+    display: flex; flex-direction: column;
+    height: calc(100vh - 200px); min-height: 480px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .messages {
+    flex: 1; overflow-y: auto; padding: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .msg { max-width: 85%; }
+  .msg.user { align-self: flex-end; }
+  .msg.assistant { align-self: flex-start; }
+  .msg .who {
+    font-size: 11px; color: var(--muted); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  .msg .body {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--bg);
+    white-space: pre-wrap;
+  }
+  .msg.user .body { background: var(--accent-soft); }
+  .citations { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .cite {
+    font-size: 12px; padding: 2px 8px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--paper); cursor: pointer; color: var(--muted);
+  }
+  .cite:hover, .cite:active { border-color: var(--accent); color: var(--accent); }
+
+  .composer {
+    border-top: 1px solid var(--line);
+    padding: 12px;
+    display: flex; gap: 8px; align-items: end;
+    background: var(--paper);
+  }
+  .composer textarea {
+    flex: 1; resize: none; min-height: 44px; max-height: 160px;
+    font-family: inherit; font-size: 16px; line-height: 1.45;
+    padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 6px;
+    background: var(--paper); color: var(--ink);
+  }
+  .composer textarea:focus { outline: none; border-color: var(--accent); }
+  .composer button {
+    padding: 10px 18px; border: none; border-radius: 6px;
+    background: var(--accent); color: white;
+    font-family: inherit; font-size: 14px; cursor: pointer;
+    align-self: stretch;
+  }
+  .composer button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .composer button:hover:not(:disabled) { background: #98472d; }
+
+  /* Studio */
+  .studio-tools {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .tool {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 16px;
+  }
+  .tool h3 { margin: 0 0 10px; font-size: 16px; }
+  .tool .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tool select, .tool input[type=text] {
+    flex: 1; padding: 10px 12px;
+    font-family: inherit; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 4px;
+    background: var(--paper); color: var(--ink);
+    min-width: 120px;
+  }
+  .tool button {
+    padding: 10px 16px; border: none; border-radius: 4px;
+    background: var(--accent); color: white;
+    cursor: pointer; font-family: inherit; font-size: 14px;
+  }
+  .tool button:hover { background: #98472d; }
+  .tool button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .note-form {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 16px; margin-bottom: 24px;
+  }
+  .note-form h3 { margin: 0 0 10px; font-size: 16px; }
+  .note-form input, .note-form textarea {
+    width: 100%; padding: 10px 12px; margin-bottom: 8px;
+    font-family: inherit; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 4px;
+    background: var(--paper); color: var(--ink);
+  }
+  .note-form textarea { min-height: 80px; resize: vertical; }
+  .note-form button {
+    padding: 10px 16px; border: none; border-radius: 4px;
+    background: var(--accent); color: white;
+    cursor: pointer; font-family: inherit; font-size: 14px;
+  }
+
+  .entries { display: grid; gap: 12px; }
+  .entry {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .entry .head {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .entry .kind {
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  .entry .title { font-weight: 600; }
+  .entry .when { color: var(--muted); font-size: 12px; margin-left: auto; }
+  .entry .body { white-space: pre-wrap; font-size: 14px; line-height: 1.6; }
+  .entry pre {
+    background: var(--bg); padding: 10px; border-radius: 4px;
+    overflow-x: auto; font-size: 13px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: pre-wrap;
+  }
+  .entry .actions { margin-top: 8px; display: flex; gap: 8px; }
+  .entry .actions button {
+    border: 1px solid var(--line); background: var(--paper);
+    padding: 6px 10px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; font-size: 12px; color: var(--muted);
+  }
+  .entry .actions button:hover { border-color: #b14545; color: #b14545; }
+  .mermaid { background: var(--bg); padding: 12px; border-radius: 4px; text-align: center; }
+
+  .empty { color: var(--muted); font-style: italic; padding: 28px; text-align: center; }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(43, 38, 34, 0.4);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--paper); border-radius: 10px;
+    max-width: 480px; width: 100%;
+    padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal h2 { margin: 0 0 8px; font-size: 20px; }
+  .modal p { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  .modal input {
+    width: 100%; padding: 10px 12px; margin-bottom: 12px;
+    font-family: inherit; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 4px;
+    background: var(--paper); color: var(--ink);
+  }
+  .modal .actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .modal button {
+    padding: 10px 16px; border-radius: 4px; cursor: pointer;
+    font-family: inherit; font-size: 14px;
+  }
+  .modal button.primary {
+    border: none; background: var(--accent); color: white;
+  }
+  .modal button.primary:hover { background: #98472d; }
+  .modal button.secondary {
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+  }
+  .modal a { color: var(--accent); }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--paper);
+    padding: 10px 18px; border-radius: 6px;
+    font-size: 14px; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 200; max-width: 90%;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    header { padding: 12px 14px; }
+    header h1 { font-size: 20px; }
+    header .tag { display: none; }
+    header select { min-width: 0; flex: 1; }
+    main { padding: 14px; }
+    nav.tabs button { padding: 12px 8px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ali</h1>
+  <span class="tag">your reading companion</span>
+  <span class="spacer"></span>
+  <select id="book-select" aria-label="Select book">
+    <option value="">— no book selected —</option>
+  </select>
+  <button id="settings-btn" class="icon" title="Settings">⚙︎</button>
+</header>
+
+<nav class="tabs">
+  <button data-tab="upload" class="active">Books</button>
+  <button data-tab="chat">Chat with Ali</button>
+  <button data-tab="studio">Notebook Studio</button>
+</nav>
+
+<main>
+
+<section id="upload" class="active">
+  <div class="seed">
+    <div>
+      <div class="title">Romeo and Juliet — Prologue &amp; Act I, Scene I</div>
+      <div class="meta">
+        Sourced live from
+        <a href="https://www.gutenberg.org/cache/epub/1513/pg1513.txt" target="_blank" rel="noopener">
+          Project Gutenberg #1513
+        </a> · public domain
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <button id="seed-btn">Load sample</button>
+  </div>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file-input" accept=".txt,text/plain" />
+    <p><strong>Drop a .txt file here</strong> or tap to choose</p>
+    <p class="hint">Plain text only in this single-file build. Public domain only — please don't upload anything you don't have rights to.</p>
+  </label>
+
+  <details class="paste">
+    <summary>Or paste text directly</summary>
+    <input id="paste-title" type="text" placeholder="Title" />
+    <textarea id="paste-body" placeholder="Paste book text here…"></textarea>
+    <button id="paste-btn">Add book</button>
+  </details>
+
+  <div class="books" id="books-list"></div>
+</section>
+
+<section id="chat">
+  <div class="chat-wrap">
+    <div class="messages" id="messages">
+      <div class="empty">Pick a book above and ask Ali anything about it.</div>
+    </div>
+    <form class="composer" id="composer">
+      <textarea id="composer-text" placeholder="Ask Ali about the book…" rows="1"></textarea>
+      <button type="submit" id="send-btn">Send</button>
+    </form>
+  </div>
+</section>
+
+<section id="studio">
+  <div class="studio-tools">
+    <div class="tool">
+      <h3>Overview</h3>
+      <div class="row">
+        <select id="overview-style">
+          <option value="brief">Brief</option>
+          <option value="detailed">Detailed</option>
+          <option value="outline">Outline</option>
+        </select>
+        <button id="overview-btn">Generate</button>
+      </div>
+    </div>
+    <div class="tool">
+      <h3>Information graphic</h3>
+      <div class="row">
+        <input id="graphic-topic" type="text" placeholder="e.g. who feuds with whom" />
+        <button id="graphic-btn">Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note-form">
+    <h3>Add a note</h3>
+    <input id="note-title" type="text" placeholder="Title (optional)" />
+    <textarea id="note-body" placeholder="Your thoughts about the book…"></textarea>
+    <button id="note-btn">Save note</button>
+  </div>
+
+  <div class="entries" id="entries"></div>
+</section>
+
+</main>
+
+<!-- Settings modal -->
+<div class="modal-bg" id="settings-modal">
+  <div class="modal">
+    <h2>Settings</h2>
+    <p>
+      Ali calls Anthropic's API directly from your browser. Paste your API key
+      from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">
+      console.anthropic.com</a>. It's stored only in your iPad's local storage.
+    </p>
+    <input id="api-key-input" type="password" placeholder="sk-ant-..." />
+    <input id="model-input" type="text" placeholder="claude-opus-4-7" />
+    <div class="actions">
+      <button class="secondary" id="settings-cancel">Cancel</button>
+      <button class="primary" id="settings-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+ * Ali — single-file client.
+ * State, chunking, retrieval, Claude calls, UI all in this file.
+ * ========================================================== */
+
+const STORAGE_KEY = "ali.state.v1";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const GUTENBERG_URL = "https://www.gutenberg.org/cache/epub/1513/pg1513.txt";
+
+// Default state
+const defaultState = () => ({
+  apiKey: "",
+  model: "claude-opus-4-7",
+  currentBookId: "",
+  currentSessionId: "",
+  books: {},          // id -> { id, title, author, text, chunks: [{idx, char_start, char_end, text}] }
+  sessions: {},       // bookId -> [{role, content, citations?}]
+  notebook: {},       // bookId -> [{id, kind, title, body, meta, created_at}]
+});
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    return Object.assign(defaultState(), parsed);
+  } catch (e) {
+    console.warn("state load failed:", e);
+    return defaultState();
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    toast("Couldn't save (storage full?)");
+  }
+}
+
+/* ----- helpers ----- */
+const $ = sel => document.querySelector(sel);
+const el = (tag, attrs = {}, ...children) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null) e.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return e;
+};
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+function newId() {
+  return Math.random().toString(36).slice(2, 14);
+}
+
+/* ----- ingest / chunk ----- */
+function chunkText(text, target = 1800, overlap = 200) {
+  const chunks = [];
+  if (!text) return chunks;
+  const n = text.length;
+  let pos = 0;
+  while (pos < n) {
+    let end = Math.min(pos + target, n);
+    if (end < n) {
+      const window = text.slice(pos, end);
+      for (const sep of ["\n\n", "\n", ". ", " "]) {
+        const idx = window.lastIndexOf(sep);
+        if (idx > target * 0.5) {
+          end = pos + idx + sep.length;
+          break;
+        }
+      }
+    }
+    const chunk = text.slice(pos, end).trim();
+    if (chunk) chunks.push({ char_start: pos, char_end: end, text: chunk });
+    if (end >= n) break;
+    pos = Math.max(end - overlap, pos + 1);
+  }
+  return chunks.map((c, i) => ({ idx: i, ...c }));
+}
+
+function ingestBook({ title, author = null, text }) {
+  if (!text || !text.trim()) throw new Error("empty text");
+  const id = newId();
+  const chunks = chunkText(text);
+  state.books[id] = { id, title, author, text, chunks };
+  state.sessions[id] = [];
+  state.notebook[id] = [];
+  saveState();
+  return state.books[id];
+}
+
+function deleteBook(id) {
+  delete state.books[id];
+  delete state.sessions[id];
+  delete state.notebook[id];
+  if (state.currentBookId === id) state.currentBookId = "";
+  saveState();
+}
+
+/* ----- retrieval (TF-IDF over chunks) ----- */
+function tokenize(s) {
+  return (String(s).toLowerCase().match(/[a-z0-9']+/g) || []);
+}
+
+function buildIndex(book) {
+  if (book._index) return book._index;
+  const docs = book.chunks.map(c => tokenize(c.text));
+  const docFreq = {};
+  for (const d of docs) {
+    for (const t of new Set(d)) docFreq[t] = (docFreq[t] || 0) + 1;
+  }
+  book._index = { docs, docFreq, N: docs.length };
+  return book._index;
+}
+
+function retrieve(book, query, k = 6) {
+  const idx = buildIndex(book);
+  const q = tokenize(query);
+  if (!q.length) return [];
+  const qset = new Set(q);
+  const scores = idx.docs.map((toks, i) => {
+    const tf = {};
+    for (const t of toks) tf[t] = (tf[t] || 0) + 1;
+    let s = 0;
+    for (const t of q) {
+      if (tf[t]) {
+        const df = idx.docFreq[t] || 1;
+        const idfWeight = Math.log(1 + idx.N / df);
+        s += tf[t] * idfWeight;
+      }
+    }
+    // small bonus for chunks that contain any query term (helps tiny corpora)
+    if (s === 0 && toks.some(t => qset.has(t))) s = 0.01;
+    return s;
+  });
+  return book.chunks
+    .map((c, i) => ({ chunk: c, score: scores[i] }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k)
+    .map(x => x.chunk);
+}
+
+/* ----- Claude API ----- */
+async function callClaude({ system, messages, max_tokens = 1024 }) {
+  if (!state.apiKey) {
+    throw new Error("No API key set. Tap ⚙︎ to add yours.");
+  }
+  const body = {
+    model: state.model || "claude-opus-4-7",
+    max_tokens,
+    system,
+    messages,
+  };
+  const r = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": state.apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    let detail = "";
+    try { detail = (await r.json()).error?.message || ""; } catch {}
+    throw new Error(`API ${r.status}: ${detail || r.statusText}`);
+  }
+  const data = await r.json();
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+}
+
+function bookContextBlock(book, maxChars = 80000) {
+  const parts = [];
+  let used = 0;
+  for (const c of book.chunks) {
+    const block = `[#${c.idx}]\n${c.text}`;
+    if (used + block.length > maxChars) break;
+    parts.push(block);
+    used += block.length + 4;
+  }
+  return parts.join("\n\n---\n\n");
+}
+
+function formatExcerpts(chunks) {
+  return chunks.map(c => `[#${c.idx}]\n${c.text}`).join("\n\n---\n\n");
+}
+
+const SYSTEM_BASE =
+  "You are Ali, the reader's study companion for a single book. Answer their " +
+  "questions strictly from the provided book excerpts. If the answer isn't in " +
+  "the excerpts, say so plainly. When you make a claim, attach a citation in " +
+  "the form [#<idx>] where <idx> is the chunk index. Keep answers tight and " +
+  "grounded in the text. The reader's name comes from the conversation; you " +
+  "are Ali.";
+
+async function chatWithAli(book, userMessage, history) {
+  const cited = retrieve(book, userMessage, 6);
+  const excerpts = formatExcerpts(cited);
+  const fullBook = bookContextBlock(book);
+
+  const system = [
+    { type: "text", text: SYSTEM_BASE },
+    {
+      type: "text",
+      text: `FULL BOOK (cached for repeated questions):\n\n${fullBook}`,
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+
+  const userTurn =
+    `Relevant excerpts for this question:\n\n${excerpts}\n\n` +
+    `Question: ${userMessage}`;
+  const messages = [...history, { role: "user", content: userTurn }];
+
+  const text = await callClaude({ system, messages, max_tokens: 1024 });
+  return { text, citations: cited.map(c => ({ idx: c.idx, snippet: c.text.slice(0, 240) })) };
+}
+
+async function generateOverview(book, style) {
+  const fullBook = bookContextBlock(book);
+  const prompts = {
+    brief: "Write a tight 5-8 sentence overview of this book.",
+    detailed: "Write a detailed multi-paragraph overview: setup, key arguments or arc, and stakes.",
+    outline: "Produce a structured outline of this book: top-level sections with 2-4 bullets each.",
+  };
+  const system = [
+    { type: "text", text: "You are Ali, summarizing a book the reader is working through." },
+    {
+      type: "text",
+      text: `BOOK:\n\n${fullBook}`,
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  return await callClaude({
+    system,
+    messages: [{ role: "user", content: prompts[style] || prompts.brief }],
+    max_tokens: 1500,
+  });
+}
+
+async function generateGraphic(book, topic) {
+  const fullBook = bookContextBlock(book);
+  const system = [
+    { type: "text", text: "You produce information graphics that illuminate themes and structures in a book." },
+    {
+      type: "text",
+      text: `BOOK:\n\n${fullBook}`,
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  const instr =
+    "Output ONLY a Mermaid diagram inside a ```mermaid fenced code block. " +
+    "Choose the diagram type (flowchart, mindmap, timeline, classDiagram) that best fits the topic.";
+  return await callClaude({
+    system,
+    messages: [{ role: "user", content: `Topic: ${topic}\n\n${instr}` }],
+    max_tokens: 2000,
+  });
+}
+
+/* ----- Romeo & Juliet seed loader ----- */
+function sliceShakespeare(fullText) {
+  // Strip Project Gutenberg header/footer if present.
+  const startMarker = fullText.match(/\*\*\*\s*START OF.*?\*\*\*/s);
+  let text = startMarker ? fullText.slice(startMarker.index + startMarker[0].length) : fullText;
+  const endMarker = text.match(/\*\*\*\s*END OF.*?\*\*\*/s);
+  if (endMarker) text = text.slice(0, endMarker.index);
+
+  // Find prologue start.
+  const prologueRe = /(^|\n)\s*(THE PROLOGUE|PROLOGUE)\s*\n/i;
+  const pm = text.match(prologueRe);
+  if (!pm) throw new Error("Couldn't locate THE PROLOGUE in the text");
+  const startIdx = pm.index + (pm[1] ? pm[1].length : 0);
+
+  // Find Scene II marker that ends Scene I.
+  const tail = text.slice(startIdx);
+  const sceneIIRe = /\n\s*(SCENE\s+II|Scene\s+II)\.?\s*\n/;
+  const s2 = tail.match(sceneIIRe);
+  const sliced = s2 ? tail.slice(0, s2.index) : tail;
+
+  return sliced.trim();
+}
+
+async function loadRomeoAndJuliet() {
+  const btn = $("#seed-btn");
+  btn.disabled = true; btn.textContent = "Fetching…";
+  try {
+    const r = await fetch(GUTENBERG_URL);
+    if (!r.ok) throw new Error("Fetch failed: " + r.status);
+    const full = await r.text();
+    const sliced = sliceShakespeare(full);
+    if (sliced.length < 1000) throw new Error("Sliced text too short — parsing failed");
+    const book = ingestBook({
+      title: "Romeo and Juliet — Prologue & Act I, Scene I",
+      author: "William Shakespeare",
+      text: sliced,
+    });
+    selectBook(book.id);
+    toast(`Loaded "${book.title}"`);
+  } catch (err) {
+    console.error(err);
+    const msg =
+      "Couldn't fetch from Project Gutenberg directly (browsers often block " +
+      "cross-origin file:// requests). Tap the link to open the source in a " +
+      "new tab, copy from THE PROLOGUE through the end of Scene I, then use " +
+      "\"Or paste text directly\" below.";
+    alert(msg);
+  } finally {
+    btn.disabled = false; btn.textContent = "Load sample";
+  }
+}
+
+/* ----- UI: tabs ----- */
+document.querySelectorAll("nav.tabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("nav.tabs button").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll("section").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    $("#" + b.dataset.tab).classList.add("active");
+    if (b.dataset.tab === "studio") renderEntries();
+    if (b.dataset.tab === "chat") renderMessages();
+  });
+});
+
+/* ----- UI: book selector + list ----- */
+function renderBookSelect() {
+  const sel = $("#book-select");
+  const books = Object.values(state.books);
+  sel.innerHTML = '<option value="">— no book selected —</option>';
+  for (const b of books) {
+    const o = el("option", { value: b.id }, `${b.title}${b.author ? " — " + b.author : ""}`);
+    if (b.id === state.currentBookId) o.selected = true;
+    sel.append(o);
+  }
+}
+
+function renderBookList() {
+  const root = $("#books-list");
+  root.innerHTML = "";
+  const books = Object.values(state.books);
+  if (!books.length) {
+    root.append(el("div", { class: "empty" }, "No books yet. Load the sample, drop a .txt, or paste text."));
+    return;
+  }
+  for (const b of books) {
+    const card = el("div", { class: "book-card" },
+      el("div", {},
+        el("div", { class: "title" }, b.title),
+        el("div", { class: "meta" },
+          `${b.author || "unknown author"} · ${b.chunks.length} chunks · ${b.text.length.toLocaleString()} chars`
+        ),
+      ),
+      el("div", { class: "spacer" }),
+      el("button", { onclick: () => selectBook(b.id) },
+        b.id === state.currentBookId ? "Selected" : "Read with Ali"),
+      el("button", { class: "danger", onclick: () => askDelete(b.id) }, "Delete"),
+    );
+    root.append(card);
+  }
+}
+
+function selectBook(id) {
+  state.currentBookId = id;
+  state.currentSessionId = id ? (state.currentSessionId || newId()) : "";
+  saveState();
+  renderBookSelect();
+  renderBookList();
+  renderMessages();
+  renderEntries();
+  // Jump to chat
+  document.querySelectorAll("nav.tabs button").forEach(x => x.classList.remove("active"));
+  document.querySelector('nav.tabs button[data-tab="chat"]').classList.add("active");
+  document.querySelectorAll("section").forEach(x => x.classList.remove("active"));
+  $("#chat").classList.add("active");
+}
+
+function askDelete(id) {
+  if (!confirm("Delete this book and all its notes and chats?")) return;
+  deleteBook(id);
+  renderBookSelect();
+  renderBookList();
+  renderMessages();
+  renderEntries();
+  toast("Book deleted");
+}
+
+$("#book-select").addEventListener("change", e => {
+  selectBook(e.target.value);
+  if (!e.target.value) {
+    document.querySelectorAll("nav.tabs button").forEach(x => x.classList.remove("active"));
+    document.querySelector('nav.tabs button[data-tab="upload"]').classList.add("active");
+    document.querySelectorAll("section").forEach(x => x.classList.remove("active"));
+    $("#upload").classList.add("active");
+  }
+});
+
+/* ----- UI: upload + paste ----- */
+$("#seed-btn").addEventListener("click", loadRomeoAndJuliet);
+
+const drop = $("#drop");
+const fileInput = $("#file-input");
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+async function handleFile(file) {
+  try {
+    const text = await file.text();
+    const book = ingestBook({
+      title: file.name.replace(/\.txt$/i, ""),
+      text,
+    });
+    selectBook(book.id);
+    toast(`Added "${book.title}"`);
+  } catch (err) {
+    toast("Upload failed: " + err.message);
+  }
+}
+
+$("#paste-btn").addEventListener("click", () => {
+  const title = $("#paste-title").value.trim() || "Untitled";
+  const body = $("#paste-body").value.trim();
+  if (!body) { toast("Paste some text first"); return; }
+  const book = ingestBook({ title, text: body });
+  $("#paste-title").value = "";
+  $("#paste-body").value = "";
+  selectBook(book.id);
+  toast(`Added "${book.title}"`);
+});
+
+/* ----- UI: chat ----- */
+function renderMessages() {
+  const root = $("#messages");
+  root.innerHTML = "";
+  const id = state.currentBookId;
+  if (!id) {
+    root.append(el("div", { class: "empty" }, "Pick a book above and ask Ali anything about it."));
+    return;
+  }
+  const history = state.sessions[id] || [];
+  if (!history.length) {
+    root.append(el("div", { class: "empty" }, "Ask Ali anything about this book."));
+    return;
+  }
+  for (const m of history) {
+    root.append(renderMsg(m.role, m.content, m.citations || []));
+  }
+  root.scrollTop = root.scrollHeight;
+}
+
+function renderMsg(role, text, citations) {
+  const m = el("div", { class: "msg " + role },
+    el("div", { class: "who" }, role === "user" ? "You" : "Ali"),
+    el("div", { class: "body" }, text),
+  );
+  if (citations && citations.length) {
+    const cites = el("div", { class: "citations" });
+    for (const c of citations) {
+      cites.append(el("span", { class: "cite", title: c.snippet }, `#${c.idx}`));
+    }
+    m.append(cites);
+  }
+  return m;
+}
+
+const composer = $("#composer");
+const composerText = $("#composer-text");
+composerText.addEventListener("input", () => {
+  composerText.style.height = "auto";
+  composerText.style.height = Math.min(composerText.scrollHeight, 160) + "px";
+});
+composerText.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    composer.requestSubmit();
+  }
+});
+
+composer.addEventListener("submit", async e => {
+  e.preventDefault();
+  const id = state.currentBookId;
+  if (!id) { toast("Pick a book first"); return; }
+  if (!state.apiKey) { openSettings(); return; }
+  const msg = composerText.value.trim();
+  if (!msg) return;
+  composerText.value = "";
+  composerText.style.height = "auto";
+
+  state.sessions[id] = state.sessions[id] || [];
+  state.sessions[id].push({ role: "user", content: msg });
+  saveState();
+
+  const messages = $("#messages");
+  if (messages.querySelector(".empty")) messages.innerHTML = "";
+  messages.append(renderMsg("user", msg, []));
+  const thinking = el("div", { class: "msg assistant" },
+    el("div", { class: "who" }, "Ali"),
+    el("div", { class: "body" }, "thinking…"),
+  );
+  messages.append(thinking);
+  messages.scrollTop = messages.scrollHeight;
+
+  $("#send-btn").disabled = true;
+  try {
+    const book = state.books[id];
+    // Pass plain history (role/content) to the model.
+    const history = state.sessions[id]
+      .slice(0, -1) // exclude the just-pushed user message; we re-add with excerpts
+      .map(m => ({ role: m.role, content: m.content }));
+    const { text, citations } = await chatWithAli(book, msg, history);
+    state.sessions[id].push({ role: "assistant", content: text, citations });
+    saveState();
+    thinking.replaceWith(renderMsg("assistant", text, citations));
+    messages.scrollTop = messages.scrollHeight;
+  } catch (err) {
+    thinking.querySelector(".body").textContent = "Error: " + err.message;
+    state.sessions[id].push({ role: "assistant", content: "Error: " + err.message });
+    saveState();
+  } finally {
+    $("#send-btn").disabled = false;
+  }
+});
+
+/* ----- UI: studio ----- */
+$("#overview-btn").addEventListener("click", async () => {
+  const id = state.currentBookId;
+  if (!id) { toast("Pick a book first"); return; }
+  if (!state.apiKey) { openSettings(); return; }
+  const btn = $("#overview-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  try {
+    const style = $("#overview-style").value;
+    const text = await generateOverview(state.books[id], style);
+    addNotebook(id, { kind: "overview", title: `Overview (${style})`, body: text, meta: { style } });
+    toast("Overview saved");
+    renderEntries();
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Generate";
+  }
+});
+
+$("#graphic-btn").addEventListener("click", async () => {
+  const id = state.currentBookId;
+  if (!id) { toast("Pick a book first"); return; }
+  if (!state.apiKey) { openSettings(); return; }
+  const topic = $("#graphic-topic").value.trim();
+  if (!topic) { toast("Enter a topic"); return; }
+  const btn = $("#graphic-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  try {
+    const text = await generateGraphic(state.books[id], topic);
+    addNotebook(id, { kind: "graphic", title: topic, body: text, meta: { format: "mermaid" } });
+    $("#graphic-topic").value = "";
+    toast("Graphic saved");
+    renderEntries();
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Generate";
+  }
+});
+
+$("#note-btn").addEventListener("click", () => {
+  const id = state.currentBookId;
+  if (!id) { toast("Pick a book first"); return; }
+  const title = $("#note-title").value.trim();
+  const body = $("#note-body").value.trim();
+  if (!body) { toast("Note can't be empty"); return; }
+  addNotebook(id, { kind: "note", title: title || null, body });
+  $("#note-title").value = "";
+  $("#note-body").value = "";
+  toast("Note saved");
+  renderEntries();
+});
+
+function addNotebook(bookId, entry) {
+  state.notebook[bookId] = state.notebook[bookId] || [];
+  state.notebook[bookId].unshift({
+    id: newId(),
+    kind: entry.kind,
+    title: entry.title || null,
+    body: entry.body,
+    meta: entry.meta || null,
+    created_at: new Date().toISOString(),
+  });
+  saveState();
+}
+
+function deleteEntry(bookId, entryId) {
+  const arr = state.notebook[bookId] || [];
+  state.notebook[bookId] = arr.filter(e => e.id !== entryId);
+  saveState();
+  renderEntries();
+}
+
+function renderEntries() {
+  const root = $("#entries");
+  root.innerHTML = "";
+  const id = state.currentBookId;
+  if (!id) {
+    root.append(el("div", { class: "empty" }, "Pick a book to see your studio entries."));
+    return;
+  }
+  const entries = state.notebook[id] || [];
+  if (!entries.length) {
+    root.append(el("div", { class: "empty" }, "Nothing yet. Generate an overview, graphic, or write a note."));
+    return;
+  }
+  for (const e of entries) {
+    root.append(renderEntry(id, e));
+  }
+  if (window.mermaid) {
+    try { window.mermaid.run({ querySelector: ".mermaid" }); } catch (err) { console.warn(err); }
+  }
+}
+
+function renderEntry(bookId, entry) {
+  const head = el("div", { class: "head" },
+    el("span", { class: "kind" }, entry.kind),
+    el("span", { class: "title" }, entry.title || "(untitled)"),
+    el("span", { class: "when" }, (entry.created_at || "").slice(0, 19).replace("T", " ")),
+  );
+  const body = el("div", { class: "body" });
+  if (entry.kind === "graphic") {
+    const code = entry.body.match(/```mermaid\s*([\s\S]*?)```/);
+    if (code) {
+      const m = el("div", { class: "mermaid" }, code[1].trim());
+      body.append(m);
+    } else {
+      body.append(el("pre", {}, entry.body));
+    }
+  } else {
+    body.textContent = entry.body;
+  }
+  const actions = el("div", { class: "actions" },
+    el("button", { onclick: () => deleteEntry(bookId, entry.id) }, "Delete"),
+  );
+  return el("div", { class: "entry" }, head, body, actions);
+}
+
+/* ----- Settings modal ----- */
+function openSettings() {
+  $("#api-key-input").value = state.apiKey || "";
+  $("#model-input").value = state.model || "claude-opus-4-7";
+  $("#settings-modal").classList.add("show");
+}
+function closeSettings() { $("#settings-modal").classList.remove("show"); }
+
+$("#settings-btn").addEventListener("click", openSettings);
+$("#settings-cancel").addEventListener("click", closeSettings);
+$("#settings-save").addEventListener("click", () => {
+  state.apiKey = $("#api-key-input").value.trim();
+  state.model = $("#model-input").value.trim() || "claude-opus-4-7";
+  saveState();
+  closeSettings();
+  toast("Settings saved");
+});
+$("#settings-modal").addEventListener("click", e => {
+  if (e.target.id === "settings-modal") closeSettings();
+});
+
+/* ----- Mermaid (lazy CDN) ----- */
+const m = document.createElement("script");
+m.type = "module";
+m.textContent = `
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false, theme: "neutral" });
+  window.mermaid = mermaid;
+`;
+document.head.append(m);
+
+/* ----- init ----- */
+renderBookSelect();
+renderBookList();
+renderMessages();
+renderEntries();
+
+if (!state.apiKey) {
+  setTimeout(() => {
+    if (!state.apiKey) toast("Tap ⚙︎ to add your Anthropic API key.");
+  }, 600);
+}
+</script>
+</body>
+</html>
