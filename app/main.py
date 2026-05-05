@@ -5,8 +5,10 @@ import json
 import uuid
 from typing import Optional
 
+from pathlib import Path
+
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from . import audio, llm
 from .db import conn_ctx, init_db
@@ -28,6 +30,13 @@ from .schemas import (
 
 app = FastAPI(title="Book Companion API", version="0.1.0")
 init_db()
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 # ---------- books ----------
