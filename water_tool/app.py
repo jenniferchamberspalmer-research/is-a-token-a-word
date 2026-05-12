@@ -139,6 +139,7 @@ def build():
                 view1_run,
                 inputs=[v1_text, v1_mode, v1_k],
                 outputs=[v1_out, v1_csv, v1_json, v1_note],
+                queue=False,
             )
 
         # ----- View 2 -----
@@ -167,6 +168,7 @@ def build():
                 view2_run,
                 inputs=[v2_p1, v2_p2, v2_p3, v2_k],
                 outputs=[v2_out1, v2_out2, v2_out3, v2_csv1, v2_csv2, v2_csv3, v2_json],
+                queue=False,
             )
 
         # ----- View 3 -----
@@ -206,6 +208,7 @@ def build():
                 view3_run,
                 inputs=[v3_text, v3_target, v3_layer, v3_k],
                 outputs=[v3_out, v3_csv, v3_json],
+                queue=False,
             )
 
     return demo
