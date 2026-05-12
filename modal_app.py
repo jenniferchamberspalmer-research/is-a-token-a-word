@@ -80,7 +80,10 @@ volume = modal.Volume.from_name("water-tool-cache", create_if_missing=True)
     secrets=[modal.Secret.from_name("huggingface")],
     volumes={"/cache": volume},
     scaledown_window=300,  # idle 5 min before shutting down
+    max_containers=1,      # all requests hit the same container so Gradio
+                           # sessions and SSE streams stay coherent
 )
+@modal.concurrent(max_inputs=100)  # one container, many concurrent requests
 @modal.asgi_app()
 def serve():
     import os
