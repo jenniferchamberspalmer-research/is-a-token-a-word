@@ -60,7 +60,8 @@ image = (
         "pydantic<2.10",
         "pandas>=2.0",
         "requests>=2.31",
-        "fastapi>=0.110",
+        "fastapi==0.112.2",
+        "starlette==0.38.6",
     )
     .add_local_python_source("water_tool")
 )
