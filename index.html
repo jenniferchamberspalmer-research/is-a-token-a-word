@@ -472,6 +472,89 @@
     color: var(--accent-light);
     font-weight: 500;
   }
+
+  /* --- INTERACTIVE 0: ELEMENT vs UNIT (THE COIN) --- */
+  .coin-sequence {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    line-height: 1.85;
+    color: var(--mono-text);
+    background: var(--mono-bg);
+    border-radius: 6px;
+    padding: 22px 26px;
+    margin-bottom: 20px;
+    white-space: pre;
+    letter-spacing: 1px;
+    overflow-x: auto;
+  }
+  .coin-sequence .verb { color: var(--accent-light); }
+  .coin-sequence .bit { color: #8FA9A0; }
+
+  .coin-btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .token-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+  .token-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(6px);
+    animation: fadeIn 0.35s ease forwards;
+  }
+  .token-chip .chip-note {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-top: 4px;
+  }
+
+  .coin-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 26px 0 6px;
+  }
+  .coin {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #EBCB6E, var(--accent-light) 55%, var(--accent-deep));
+    color: var(--mono-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 40px;
+    font-weight: 500;
+    box-shadow: inset 0 -6px 14px rgba(0,0,0,0.32), 0 8px 20px rgba(0,0,0,0.18);
+  }
+  .coin.flipping { animation: coinflip 0.18s linear; }
+  @keyframes coinflip { 0% { transform: scaleY(1); } 50% { transform: scaleY(0.08); } 100% { transform: scaleY(1); } }
+  .coin.landed { box-shadow: inset 0 -6px 14px rgba(0,0,0,0.32), 0 0 0 4px var(--highlight), 0 8px 22px rgba(0,0,0,0.2); }
+  .coin-caption {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 18px;
+    min-height: 18px;
+  }
+  .coin-readout {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 6px;
+    min-height: 16px;
+  }
 </style>
 </head>
 <body>
@@ -528,6 +611,31 @@
     <p>Vygotsky's argument was precise: a word without meaning is merely a sound; meaning without a word is merely a thought. Neither, in isolation, possesses the properties of verbal thought. But <em>word meaning</em> — the living amalgam of the two — retains the properties of both. It is simultaneously a phenomenon of speech (communicative, social, external) and a phenomenon of thought (generalizing, conceptual, internal). As Vygotsky wrote: "The meaning of a word represents such a close amalgam of thought and language that it is hard to tell whether it is a phenomenon of speech or a phenomenon of thought" (1934/1986, Ch. 7). It is, in his terms, the <em>unit</em> — the smallest element that preserves the structure of the whole.</p>
 
     <p>His methodological analogy was chemistry: you can decompose water into hydrogen and oxygen, but you cannot find "wetness" in either element. The property belongs to the molecule — the unit — not to the elements. Similarly, you cannot find verbal thought by studying sound and meaning separately. You must study word meaning as an irreducible unit (1934/1986, Ch. 1, pp. 3–5 in the Kozulin edition).</p>
+
+    <!-- INTERACTIVE 0: ELEMENT vs UNIT -->
+    <div class="probe-container" id="coin-demo">
+      <div class="probe-header">
+        <span class="probe-title">Interactive 0 — Element vs. Unit</span>
+        <span class="probe-badge">Client-side · no API</span>
+      </div>
+      <div class="probe-body">
+        <p class="probe-description">Before the argument goes further, a small demonstration the reader can run. Below is a short sequence — each line sets the digits <strong>0</strong> and <strong>1</strong> around a word. Read it both ways: first take it apart into its elements, then read it as a single whole, and watch which reading yields its meaning.</p>
+        <div class="coin-sequence" id="coin-seq"><span class="bit">0</span> <span class="bit">1</span>
+<span class="bit">1</span><span class="verb">twist</span><span class="bit">0</span>
+<span class="bit">0</span><span class="verb">quarter</span><span class="bit">1</span>
+<span class="bit">1</span><span class="verb">spin</span><span class="bit">0</span>
+<span class="bit">0</span><span class="verb">spin</span><span class="bit">1</span>
+<span class="bit">1</span><span class="verb">spin</span><span class="bit">0</span>
+<span class="bit">0</span><span class="verb">tilt</span><span class="bit">1</span>
+<span class="bit">1</span><span class="verb">land</span><span class="bit">0</span>
+<span class="bit">1</span> <span class="bit">0</span></div>
+        <div class="coin-btn-row">
+          <button class="run-probe-btn" onclick="decomposeCoin()">① Decompose into elements</button>
+          <button class="run-probe-btn" onclick="readCoinAsUnit()">② Read as a unit →</button>
+        </div>
+        <div class="probe-results" id="coin-results"></div>
+      </div>
+    </div>
 
     <p>He culminated this argument with a metaphor that has become his most quoted passage:</p>
 
@@ -1183,6 +1291,77 @@ async function runProbe4() {
   addAnalysis('probe4-results', `<div class="analysis-title">Analytical Note</div><p>This is perhaps the most demanding probe. The first author reports that in mature consciousness, contradictory meanings of "y'all" are co-present and simultaneous — they do not resolve. The question is whether the model can produce output that genuinely holds tension, or whether it inevitably moves toward synthesis, balance, or resolution. LLMs are trained on text that tends toward coherence; the ability to sustain genuine contradiction without resolution would be significant behavioral evidence. Note, however, that even successful performance here does not establish that the model EXPERIENCES the tension — only that the token's representational structure can produce contradictory outputs without collapse.</p>`);
 
   btn.textContent = 'Probe Complete ✓';
+}
+
+// INTERACTIVE 0: Element vs Unit — the coin
+const COIN_STEPS = [
+  { verb: 'twist',   face: '1' },
+  { verb: 'quarter', face: '0' },
+  { verb: 'spin',    face: '1' },
+  { verb: 'spin',    face: '0' },
+  { verb: 'spin',    face: '1' },
+  { verb: 'tilt',    face: '0' },
+  { verb: 'land',    face: '1' }
+];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let coinRunning = false;
+
+function decomposeCoin() {
+  const results = document.getElementById('coin-results');
+  results.classList.add('visible');
+  const elements = ['twist', 'quarter', 'spin', 'spin', 'spin', 'tilt', 'land'];
+  const notes = ['an element', 'a fragment', 'indeterminate', 'still nothing', 'no whole here', 'an element', 'where is the coin?'];
+  const chips = elements.map((t, i) =>
+    `<span class="token-chip" style="animation-delay:${i * 70}ms">${t}<span class="chip-note">${notes[i]}</span></span>`
+  ).join('');
+  results.innerHTML =
+    `<div class="result-item"><div class="result-label">The sequence, taken apart</div>` +
+    `<div class="token-strip">${chips}</div>` +
+    `<div class="result-text" style="margin-top:12px; color:var(--text-secondary); font-size:16px;">` +
+    `Seven words, plus a scatter of 0s and 1s. Read one at a time, no element tells you what the sequence <em>is</em>. The thing they compose is in none of them. Now read it as a unit.</div></div>`;
+}
+
+async function readCoinAsUnit() {
+  if (coinRunning) return;
+  coinRunning = true;
+  const results = document.getElementById('coin-results');
+  results.classList.add('visible');
+  results.innerHTML =
+    `<div class="coin-stage">` +
+    `<div class="coin" id="the-coin">0</div>` +
+    `<div class="coin-caption" id="coin-caption">at rest</div>` +
+    `<div class="coin-readout" id="coin-readout">0&nbsp;&nbsp;1 — before the toss</div>` +
+    `</div>`;
+  const coin = document.getElementById('the-coin');
+  const caption = document.getElementById('coin-caption');
+  const readout = document.getElementById('coin-readout');
+  await sleep(700);
+
+  let edge = '0';
+  for (const step of COIN_STEPS) {
+    caption.textContent = step.verb;
+    coin.classList.add('flipping');
+    await sleep(90);                 // pinch point of the flip
+    coin.textContent = step.face;
+    edge += step.face;
+    readout.textContent = 'face up: ' + edge.split('').join(' ');
+    await sleep(90);
+    coin.classList.remove('flipping');
+    await sleep(150);
+  }
+
+  coin.classList.add('landed');
+  caption.textContent = 'landed on ' + coin.textContent;
+  readout.textContent = 'the flicker stops — it resolves to ' + coin.textContent;
+  await sleep(450);
+
+  addResult('coin-results', 'Reading — the whole',
+    `<strong>It is a coin being flipped.</strong> A <em>quarter</em> — twisted, given a quarter-turn, sent into three spins, tilted, and landed. While it is airborne the face you can read flickers 0, 1, 0, 1 — both values present, none of them final. Then it <strong>lands on 1</strong>: the alternation breaks (the last two lines both read 1) and the coin resolves to a single outcome.`);
+  addAnalysis('coin-results',
+    `<div class="analysis-title">Why this is here</div>` +
+    `<p>A coin is a <em>token</em> — and this token is spelled entirely out of words (<em>twist, quarter, spin, tilt, land</em>) without being any one of them. Its meaning — "a coin lands on 1" — lives only in the nine lines held together as a single unit. Decompose it into its elements, as the other button does, and the flip is nowhere: "spin" alone, "0" alone, "tilt" alone retain none of it. This is Vygotsky's chemistry exactly — you cannot find "wetness" in hydrogen or in oxygen. The property belongs to the whole, not to the parts. The spinning coin even stages a claim this paper reaches later: in the air it holds 0 and 1 at once, and only the landing — context — collapses it to one.</p>`);
+
+  coinRunning = false;
 }
 </script>
 
