@@ -1,0 +1,42 @@
+name: Run probe batch
+
+# Triggerable manually from the Actions tab on github.com (also works on mobile).
+# Runs harness.py against the deployed Modal endpoint and commits the resulting
+# JSON + CSV files back to the branch this workflow file lives on.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-probes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --quiet gradio_client pandas
+
+      - name: Run probe harness
+        run: python harness.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No new data files to commit."
+          else
+            git commit -m "Probe data from workflow run #${{ github.run_number }}"
+            git push
+          fi

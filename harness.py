@@ -1,20 +1,20 @@
 """Programmatic driver for the Water Pattern Tool.
 
 Calls each of the three Gradio views via gradio_client against the
-deployed Modal endpoint, collects all outputs as JSON in
-`data/<BATCH>/<word>/`, ready to be committed to the repository.
+deployed Modal endpoint, collects all outputs as JSON (full metadata)
+*and* CSV (Excel-friendly review form) in `data/<BATCH>/<word>/`.
 
-Run this from the repo root on a machine that can reach Modal:
+Run from the repo root on any machine that can reach Modal:
 
-    pip install gradio_client
+    pip install gradio_client pandas
     python harness.py
 
-The model and SAEs load lazily on the first call per process on
-Modal, so the first probe of each run takes ~30-60 seconds. Subsequent
-probes are fast. Whole batch takes ~5-10 minutes wall-clock and burns
-roughly $0.10-$0.50 of Modal credit on a T4.
+The whole batch takes ~5-10 min wall-clock and ~$0.10-$0.50 of Modal
+credit on a T4. The first call per process is slow (Modal cold start
++ model load); subsequent calls are fast.
 """
 
+import csv
 import json
 import sys
 import time
@@ -23,14 +23,14 @@ from pathlib import Path
 try:
     from gradio_client import Client
 except ImportError:
-    print("Missing dependency. Run:  pip install gradio_client", file=sys.stderr)
+    print("Missing dependency. Run:  pip install gradio_client pandas", file=sys.stderr)
     sys.exit(1)
 
 
 URL = "https://jenniferchamberspalmer-research--water-pattern-tool-serve.modal.run"
 BATCH = "2026-06-15-sacramental-substances"
-TOP_K = 20      # views 1 and 2
-V3_K = 15       # view 3 (matches the spec we've been using)
+TOP_K = 20
+V3_K = 15
 V3_LAYERS = ["6", "12", "19"]
 
 
@@ -57,52 +57,45 @@ PROBES = {
 
 
 def _df_to_records(df_obj):
-    """Normalize Gradio Dataframe outputs into a list of dicts.
-
-    gradio_client may return a dataframe as:
-      - a dict with 'headers' and 'data' keys (most common),
-      - a pandas.DataFrame (if pandas is installed),
-      - already a list of records.
-    """
-    # pandas DataFrame
+    """Normalize Gradio Dataframe outputs into a list of dicts."""
     if hasattr(df_obj, "to_dict"):
         return df_obj.to_dict(orient="records")
-    # Gradio dict form
     if isinstance(df_obj, dict) and "headers" in df_obj and "data" in df_obj:
         headers = df_obj["headers"]
         return [dict(zip(headers, row)) for row in df_obj["data"]]
-    # already records
     if isinstance(df_obj, list):
         return df_obj
-    # fallback
     return df_obj
 
 
-def _save(path: Path, payload: dict) -> None:
+def _save_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, default=str))
+    print(f"  saved -> {path}")
+
+
+def _save_csv(path: Path, rows: list) -> None:
+    """Write a list of dicts as CSV. If rows is empty, write an empty file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not rows:
+        path.write_text("")
+        print(f"  saved -> {path}  (empty)")
+        return
+    fieldnames = list(rows[0].keys())
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
     print(f"  saved -> {path}")
 
 
 def run():
     print(f"Connecting to {URL} ...")
     client = Client(URL, verbose=False)
-    print("Connected. Available endpoints:")
-    try:
-        print(client.view_api(return_format="str"))
-    except Exception as e:
-        print(f"  (could not retrieve api summary: {e})")
+    print("Connected.")
 
     out_root = Path("data") / BATCH
     out_root.mkdir(parents=True, exist_ok=True)
-
-    # Copy the research plan into the data folder so a downloader gets it bundled.
-    plan_src = out_root / "research_plan.md"
-    if plan_src.exists():
-        print(f"\nResearch plan already in place at {plan_src}")
-    else:
-        print(f"\nNote: research_plan.md not found in {out_root}; create it before publishing.")
-
     total_start = time.time()
 
     for word, cfg in PROBES.items():
@@ -110,70 +103,78 @@ def run():
         wdir = out_root / word
         wdir.mkdir(exist_ok=True)
 
-        # --- View 1, raw embedding lookup ---
+        # ---- View 1, raw embedding lookup ----
         print("  view 1 (raw_lookup) ...")
         t0 = time.time()
-        out = client.predict(
+        df, _csv, _json, note = client.predict(
             cfg["view1_text"],
             "raw_lookup (embedding table)",
             TOP_K,
             fn_index=0,
         )
-        df, csv_path, json_path, note = out
-        _save(wdir / "view1_raw.json", {
+        records = _df_to_records(df)
+        _save_json(wdir / "view1_raw.json", {
             "input": {"text": cfg["view1_text"], "mode": "raw_lookup", "k": TOP_K},
             "elapsed_s": round(time.time() - t0, 2),
-            "results": _df_to_records(df),
             "note": note,
+            "results": records,
         })
+        _save_csv(wdir / "view1_raw.csv", records)
 
-        # --- View 1, contextualized hidden state ---
+        # ---- View 1, contextualized hidden state ----
         print("  view 1 (contextual) ...")
         t0 = time.time()
-        out = client.predict(
+        df, _csv, _json, note = client.predict(
             cfg["view1_text"],
             "contextual (final hidden state)",
             TOP_K,
             fn_index=0,
         )
-        df, csv_path, json_path, note = out
-        _save(wdir / "view1_contextual.json", {
+        records = _df_to_records(df)
+        _save_json(wdir / "view1_contextual.json", {
             "input": {"text": cfg["view1_text"], "mode": "contextual", "k": TOP_K},
             "elapsed_s": round(time.time() - t0, 2),
-            "results": _df_to_records(df),
             "note": note,
+            "results": records,
         })
+        _save_csv(wdir / "view1_contextual.csv", records)
 
-        # --- View 2, three prompts in a single call ---
+        # ---- View 2, three prompts in a single call ----
         print("  view 2 (three prompts) ...")
         p1, p2, p3 = cfg["view2_prompts"]
         t0 = time.time()
         out = client.predict(p1, p2, p3, TOP_K, fn_index=1)
-        # view2_run returns: df1, df2, df3, csv1, csv2, csv3, json_path
         df1, df2, df3 = out[0], out[1], out[2]
-        _save(wdir / "view2.json", {
+        per_prompt = [
+            (p1, _df_to_records(df1)),
+            (p2, _df_to_records(df2)),
+            (p3, _df_to_records(df3)),
+        ]
+        _save_json(wdir / "view2.json", {
             "input": {"prompts": list(cfg["view2_prompts"]), "k": TOP_K},
             "elapsed_s": round(time.time() - t0, 2),
-            "results": [
-                {"prompt": p1, "top_k": _df_to_records(df1)},
-                {"prompt": p2, "top_k": _df_to_records(df2)},
-                {"prompt": p3, "top_k": _df_to_records(df3)},
-            ],
+            "results": [{"prompt": p, "top_k": r} for p, r in per_prompt],
         })
+        # Long-form CSV: one row per (prompt, rank) — easy to filter in Excel
+        long_rows = []
+        for p, rows in per_prompt:
+            for r in rows:
+                long_rows.append({"prompt": p, **r})
+        _save_csv(wdir / "view2.csv", long_rows)
 
-        # --- View 3, three layers ---
+        # ---- View 3, three layers ----
         for layer in V3_LAYERS:
             print(f"  view 3 (layer {layer}) ...")
             t0 = time.time()
-            out = client.predict(
+            df, _csv, _json = client.predict(
                 cfg["view3_sentence"],
                 cfg["view3_target"],
                 layer,
                 V3_K,
                 fn_index=2,
             )
-            df, csv_path, json_path = out
-            _save(wdir / f"view3_layer{layer}.json", {
+            records = _df_to_records(df)
+            _save_json(wdir / f"view3_layer{layer}.json", {
                 "input": {
                     "sentence": cfg["view3_sentence"],
                     "target": cfg["view3_target"],
@@ -181,15 +182,12 @@ def run():
                     "k": V3_K,
                 },
                 "elapsed_s": round(time.time() - t0, 2),
-                "results": _df_to_records(df),
+                "results": records,
             })
+            _save_csv(wdir / f"view3_layer{layer}.csv", records)
 
     print(f"\nAll done in {round(time.time() - total_start, 1)} s.")
     print(f"Output tree: {out_root.resolve()}")
-    print("\nNext step: from the repo root,")
-    print(f"  git add data/{BATCH}")
-    print(f'  git commit -m "Add probe data: {BATCH}"')
-    print( "  git push")
 
 
 if __name__ == "__main__":
