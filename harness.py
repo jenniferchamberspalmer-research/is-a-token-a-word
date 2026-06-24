@@ -21,10 +21,36 @@ import time
 from pathlib import Path
 
 try:
+    import httpx
     from gradio_client import Client
 except ImportError:
     print("Missing dependency. Run:  pip install gradio_client pandas", file=sys.stderr)
     sys.exit(1)
+
+
+def warm_up(url: str, max_wait_s: int = 180) -> None:
+    """Trigger Modal cold-start and wait for the Gradio /config endpoint
+    to respond with a 200. gradio_client's default httpx timeout is too
+    short for a cold container that has to load Gemma 2 2B + SAEs
+    before answering its first request.
+    """
+    config_url = url.rstrip("/") + "/config"
+    print(f"Warming up {url} ... (up to {max_wait_s}s for cold start)")
+    deadline = time.time() + max_wait_s
+    attempt = 0
+    while time.time() < deadline:
+        attempt += 1
+        try:
+            r = httpx.get(config_url, timeout=60.0)
+            if r.status_code == 200:
+                print(f"  endpoint warm after {attempt} attempt(s)")
+                return
+            print(f"  attempt {attempt}: status {r.status_code}, retrying ...")
+        except (httpx.ReadTimeout, httpx.ConnectTimeout,
+                httpx.RemoteProtocolError, httpx.ConnectError) as e:
+            print(f"  attempt {attempt}: {type(e).__name__}, retrying ...")
+        time.sleep(5)
+    raise RuntimeError(f"Endpoint never became reachable within {max_wait_s}s")
 
 
 URL = "https://jenniferchamberspalmer-research--water-pattern-tool-serve.modal.run"
@@ -90,6 +116,7 @@ def _save_csv(path: Path, rows: list) -> None:
 
 
 def run():
+    warm_up(URL)
     print(f"Connecting to {URL} ...")
     client = Client(URL, verbose=False)
     print("Connected.")
