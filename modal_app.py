@@ -94,7 +94,51 @@ def serve():
     from fastapi import FastAPI
 
     from water_tool.app import build
+    from water_tool.views import embedding, probability, features as features_view
 
-    demo = build()
     fastapi_app = FastAPI()
+
+    # ----- Direct REST probe endpoints --------------------------------
+    # These call the same view functions the Gradio UI uses, but bypass
+    # Gradio's queue/SSE protocol entirely. They exist for programmatic
+    # harness use (gradio_client + queue=False interact badly enough that
+    # external automation needs its own path). The interactive UI still
+    # routes through Gradio below and is unaffected.
+
+    @fastapi_app.post("/probe/view1")
+    def probe_view1(req: dict):
+        text = req["text"]
+        mode = req.get("mode", "raw_lookup")
+        k = int(req.get("k", 20))
+        if mode.startswith("raw"):
+            df = embedding.raw_lookup(text, k=k)
+        else:
+            df = embedding.contextual(text, k=k)
+        return {"results": df.to_dict("records")}
+
+    @fastapi_app.post("/probe/view2")
+    def probe_view2(req: dict):
+        prompts = req["prompts"]
+        k = int(req.get("k", 20))
+        results = []
+        for p in prompts:
+            df = probability.top_next_tokens(p, k=k)
+            results.append({"prompt": p, "rows": df.to_dict("records")})
+        return {"results": results}
+
+    @fastapi_app.post("/probe/view3")
+    def probe_view3(req: dict):
+        sentence = req["sentence"]
+        target = req["target"]
+        layer = int(req["layer"])
+        k = int(req.get("k", 15))
+        df = features_view.top_features(sentence, target, layer=layer, k=k)
+        return {"results": df.to_dict("records")}
+
+    @fastapi_app.get("/probe/health")
+    def probe_health():
+        return {"ok": True}
+
+    # ----- Mount the Gradio interactive UI ---------------------------
+    demo = build()
     return gr.mount_gradio_app(fastapi_app, demo, path="/")
