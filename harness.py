@@ -22,6 +22,35 @@ from pathlib import Path
 
 try:
     import httpx
+except ImportError:
+    print("Missing dependency. Run:  pip install gradio_client pandas", file=sys.stderr)
+    sys.exit(1)
+
+# Monkey-patch httpx default timeout BEFORE importing gradio_client.
+# gradio_client 1.3.0 calls httpx.post(...) / httpx.get(...) directly
+# without exposing a timeout parameter, and its module-level default is
+# ~5s — far too short for our server's first predict call. Cold-start
+# model loading on Modal takes 30-60s, so the first send_data POST
+# always times out. Patching the module attributes here means every
+# internal call inherits a 180s budget instead.
+_orig_post = httpx.post
+_orig_get = httpx.get
+
+
+def _patched_post(*args, **kwargs):
+    kwargs.setdefault("timeout", 180)
+    return _orig_post(*args, **kwargs)
+
+
+def _patched_get(*args, **kwargs):
+    kwargs.setdefault("timeout", 180)
+    return _orig_get(*args, **kwargs)
+
+
+httpx.post = _patched_post
+httpx.get = _patched_get
+
+try:
     from gradio_client import Client
 except ImportError:
     print("Missing dependency. Run:  pip install gradio_client pandas", file=sys.stderr)
