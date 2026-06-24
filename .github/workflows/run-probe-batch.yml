@@ -31,12 +31,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        # gradio_client must match the gradio version baked into the
-        # deployed Modal container (gradio==4.44.1, gradio-client==1.3.0).
-        # An unpinned install pulls a newer client whose SSE protocol
-        # the older server cannot speak — predict() crashes with
-        # CancelledError from stream_sse_v1plus.
-        run: pip install --quiet "gradio_client==1.3.0" "httpx<0.28" pandas
+        # Harness calls the server's direct /probe REST endpoints,
+        # so we only need httpx — no gradio_client involved.
+        run: pip install --quiet httpx
 
       - name: Run probe harness
         run: python harness.py
