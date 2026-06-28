@@ -64,9 +64,51 @@ def planted_magnitude_field(n_features: int = 4096, d_model: int = 256,
             mag, cluster)
 
 
+def sparse_selector_check(n_features: int = 16384,
+                          d_model_for_check: int = 256,
+                          languages: int = 6,
+                          n_active_per_lang: int = 80,
+                          n_overlap: int = 24,
+                          quantile: float = 0.5,
+                          seed: int = 0) -> tuple[int, int]:
+    """Mimic a JumpReLU SAE activation: most features zero, ~80 fire
+    per language, with `n_overlap` features firing strongly in every
+    language. Returns (k_selected, n_overlap_recovered).
+
+    Pre-fix bug: selector returned every feature because
+    np.quantile(v, 0.95) returned 0 when 99% of v was zero, so v >= 0
+    matched everything. Post-fix: threshold is taken over POSITIVE
+    activations only.
+    """
+    from .experiment import select_crosslingual_features
+
+    rng = np.random.default_rng(seed)
+    overlap_indices = rng.choice(n_features, size=n_overlap, replace=False)
+    overlap_set = set(int(i) for i in overlap_indices)
+
+    acts_by_lang = {}
+    for lang_i in range(languages):
+        v = np.zeros(n_features)
+        # Core cross-linguistic features fire strongly in every language.
+        v[overlap_indices] = rng.uniform(5.0, 10.0, size=n_overlap)
+        # Some language-specific extras fire at a lower intensity.
+        non_overlap = np.setdiff1d(np.arange(n_features), overlap_indices)
+        extras = rng.choice(non_overlap,
+                            size=n_active_per_lang - n_overlap,
+                            replace=False)
+        v[extras] = rng.uniform(0.5, 3.0,
+                                size=n_active_per_lang - n_overlap)
+        acts_by_lang[f"lang{lang_i}"] = v
+
+    selected = select_crosslingual_features(
+        acts_by_lang, min_languages=languages, quantile=quantile)
+    recovered = sum(1 for s in selected if int(s) in overlap_set)
+    return int(len(selected)), int(recovered)
+
+
 def main() -> int:
-    print("Adversarial validation: magnitude-matched null should absorb "
-          "a high-magnitude planted structure.\n")
+    print("Adversarial validation #1: magnitude-matched null should "
+          "absorb a high-magnitude planted structure.\n")
 
     field, mag, cluster = planted_magnitude_field()
 
@@ -91,12 +133,31 @@ def main() -> int:
     print(f"cross_beta - null_unif_mean    = {headline_uniform:+.4f}")
     print()
 
-    if abs(headline_matched) < 0.5 * abs(headline_uniform):
-        print("PASS: matched null absorbed the high-magnitude structure "
-              "more than the uniform null did.")
+    adversarial_pass = abs(headline_matched) < 0.5 * abs(headline_uniform)
+    if adversarial_pass:
+        print("PASS #1: matched null absorbed the high-magnitude structure "
+              "more than the uniform null did.\n")
+    else:
+        print("FAIL #1: matched null did not absorb the high-magnitude "
+              "structure as expected.\n")
+
+    print("Sparse-selector validation #2: simulate JumpReLU sparsity "
+          "(most features 0; ~80 fire per language, 24 overlap).")
+    k_sel, n_recovered = sparse_selector_check()
+    print(f"  selected k = {k_sel}  (planted overlap = 24, "
+          f"of which recovered = {n_recovered})")
+    # PASS criteria: selector returns a small k (tens, not 16k) and
+    # recovers most of the planted overlap.
+    sparse_pass = (k_sel < 200) and (n_recovered >= 20)
+    if sparse_pass:
+        print("PASS #2: selector returns a small k on sparse activations "
+              "and recovers the planted cross-linguistic overlap.\n")
+    else:
+        print(f"FAIL #2: selector returned k={k_sel} (expected tens), "
+              f"recovered={n_recovered}/24.\n")
+
+    if adversarial_pass and sparse_pass:
         return 0
-    print("FAIL: matched null did not absorb the high-magnitude structure "
-          "as expected. Inspect widening_rate and the bin histogram.")
     return 1
 
 

@@ -163,11 +163,31 @@ def _fit_beta_batch(loads, rms_batch):
     return num / x_var
 
 
-def targeted_beta_batch(U, targets_batch, pool_indices, loads):
-    """Batched β: one β value per row of `targets_batch`."""
-    mu, sig2 = _pool_stats_batch(U, targets_batch, pool_indices)
-    rms = _rms_curve_batch(mu, sig2, loads)
-    return _fit_beta_batch(loads, rms)
+def targeted_beta_batch(U, targets_batch, pool_indices, loads,
+                         chunk_size: int = 50):
+    """Batched β over rows of `targets_batch`, chunked to bound memory.
+
+    Peak memory per chunk ≈ chunk_size * k * (pool_size + d_model) * 8
+    bytes. With defaults (chunk_size=50, k=24, pool_size=4000,
+    d_model=2304) that's ~75 MB. A full 400-draw batch without
+    chunking would have been ~600 MB at k=24, which fits, but at
+    larger k it OOMs hard — see the safety check in view1_experiment.
+
+    Reducing `chunk_size` is the lever if the container is memory-
+    constrained; larger `chunk_size` is faster but uses more memory.
+    """
+    targets_batch = np.asarray(targets_batch, dtype=int)
+    pool_indices = np.asarray(pool_indices, dtype=int)
+    n_draws = targets_batch.shape[0]
+    betas = np.empty(n_draws)
+    if chunk_size <= 0:
+        chunk_size = n_draws
+    for start in range(0, n_draws, chunk_size):
+        end = min(start + chunk_size, n_draws)
+        mu, sig2 = _pool_stats_batch(U, targets_batch[start:end], pool_indices)
+        rms = _rms_curve_batch(mu, sig2, loads)
+        betas[start:end] = _fit_beta_batch(loads, rms)
+    return betas
 
 
 def bootstrap_beta(U, targets, pool, loads, n_boot=400, seed=0):
@@ -392,12 +412,26 @@ def _z_and_p(observed, null):
 def select_crosslingual_features(acts_by_lang: dict,
                                  min_languages: int = None,
                                  quantile: float = 0.9):
-    """Identify features active in the top (1-quantile) across `min_languages`
-    languages.
+    """Identify features active in the top (1 - quantile) of positive
+    activations across `min_languages` languages.
 
     acts_by_lang : {lang: vector(n_features)} of per-feature activation
                    for the concept in that language.
     Returns: integer index array of selected features.
+
+    Sparsity handling. Gemma Scope SAEs use JumpReLU non-linearities,
+    so the vast majority of feature activations on any single token
+    are EXACTLY ZERO. A naive `np.quantile(v, 0.95)` over a vector
+    where 99% of entries are zero returns 0, and `v >= 0` then selects
+    every feature — making the whole population "cross-linguistic" and
+    blowing up downstream tensor sizes.
+
+    Fix: the threshold is computed over STRICTLY POSITIVE activations
+    only (`v[v > 0]`), and a feature only counts as active in a
+    language if it is BOTH (a) strictly positive AND (b) at or above
+    that language-specific positive-quantile threshold. The strict-
+    positive guard makes the selection robust to arbitrary zero-mass
+    in the activation distribution.
     """
     langs = list(acts_by_lang)
     n_features = len(next(iter(acts_by_lang.values())))
@@ -406,8 +440,12 @@ def select_crosslingual_features(acts_by_lang: dict,
     active = np.zeros(n_features, dtype=int)
     for lang in langs:
         v = np.asarray(acts_by_lang[lang], dtype=float)
-        thr = np.quantile(v, quantile)
-        active += (v >= thr).astype(int)
+        positive = v[v > 0]
+        if len(positive) == 0:
+            # No feature fired for this language; nothing to threshold.
+            continue
+        thr = float(np.quantile(positive, quantile))
+        active += ((v > 0) & (v >= thr)).astype(int)
     return np.where(active >= min_languages)[0]
 
 
@@ -435,6 +473,23 @@ def view1_experiment(field: SuperpositionField, xling_indices,
     k = len(xling)
     if k < 3:
         raise ValueError("need at least 3 cross-linguistic features")
+
+    # Safety guard: selection should produce a small k (tens, maybe
+    # low hundreds). Anything beyond ~5% of the feature population
+    # is implausible — almost certainly a selector failure on tied
+    # values (e.g., zero-quantile collapse on sparse SAE activations)
+    # — and the downstream batched tensors will OOM. Surface a clear
+    # error before the matmul rather than after.
+    k_max = max(1024, int(0.05 * n))
+    if k > k_max:
+        raise ValueError(
+            f"cross-linguistic selection returned {k} features out of "
+            f"{n} ({100 * k / n:.1f}%), well above the {k_max} safety "
+            f"cap. Likely cause: the activation vectors are sparse "
+            f"(JumpReLU SAE) and a quantile threshold collapsed to "
+            f"zero, selecting every feature. Tighten the quantile or "
+            f"check that the activation vectors have meaningful "
+            f"non-zero variation across features.")
 
     pool_size = min(pool_size, n)
     full_pool = rng.choice(n, size=pool_size, replace=False)
