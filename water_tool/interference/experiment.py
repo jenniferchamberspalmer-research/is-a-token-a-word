@@ -90,9 +90,84 @@ def _fit_beta(loads, rms):
 
 
 def targeted_beta(U, targets, pool, loads):
-    """Analytic β for a target set against a distractor pool."""
+    """Analytic β for a single target set against a distractor pool."""
     mu, sig2 = _pool_stats(U, targets, pool)
     return _fit_beta(loads, _rms_curve(mu, sig2, loads))
+
+
+# -------- batched-over-draws fast path (used by the null phases) --------
+#
+# Bottleneck at real 16k-feature, 2304-d_model scale: each targeted_beta
+# call re-copies U[pool] (a 73 MB tensor) before the matmul. With
+# n_null=400 calls per null phase, that's 30+ GB of memory operations
+# per phase. The batch helpers below extract U[pool] ONCE, stack all
+# n_draws target sets, and run a single (n_draws, k, d_model) @
+# (d_model, pool_size) matmul — one BLAS call replacing n_draws.
+
+def _pool_stats_batch(U, targets_batch, pool_indices):
+    """Batch version of _pool_stats.
+
+    targets_batch : (n_draws, k) integer indices into U.
+    pool_indices  : (pool_size,) integer indices into U.
+
+    Returns mu (n_draws, k), sig2 (n_draws, k).
+
+    Peak memory: ~ n_draws * k * pool_size * 8 bytes for C, plus
+    n_draws * k * d_model * 8 for the extracted target tensor. For
+    n_draws=400, k=24, pool_size=4000, d_model=2304: ~480 MB peak.
+    """
+    U_pool = U[pool_indices]                       # (pool_size, d_model)
+    U_targets = U[targets_batch]                   # (n_draws, k, d_model)
+    C = U_targets @ U_pool.T                       # (n_draws, k, pool_size)
+    # Mask out self-matches (where pool index equals target index).
+    self_mask = (pool_indices[None, None, :] ==
+                 targets_batch[:, :, None])        # (n_draws, k, pool_size)
+    C = np.where(self_mask, np.nan, C)
+    mu = np.nanmean(C, axis=2)                     # (n_draws, k)
+    sig2 = np.nanvar(C, axis=2)                    # (n_draws, k)
+    return mu, sig2
+
+
+def _rms_curve_batch(mu, sig2, loads):
+    """Vectorized RMS curve across draws.
+
+    mu, sig2 : (n_draws, k)
+    loads    : (n_loads,)
+
+    Returns rms (n_draws, n_loads).
+    """
+    Ld = np.asarray(loads, dtype=float) - 1.0     # (n_loads,)
+    # term shape (n_draws, n_loads, k): Ld^2 * mu^2 + Ld * sig2
+    term = ((Ld[None, :, None] ** 2) * (mu[:, None, :] ** 2)
+            + Ld[None, :, None] * sig2[:, None, :])
+    return np.sqrt(np.mean(term, axis=2))         # (n_draws, n_loads)
+
+
+def _fit_beta_batch(loads, rms_batch):
+    """Vectorized log-log slope per row.
+
+    rms_batch : (n_draws, n_loads)
+    Returns   : (n_draws,) array of β values; rows with all-zero rms
+                map to NaN.
+    """
+    x = np.log(np.asarray(loads, dtype=float))    # (n_loads,)
+    rms_batch = np.asarray(rms_batch, dtype=float)
+    # Replace zeros with NaN so they drop out of the regression.
+    bad = rms_batch <= 0
+    y = np.where(bad, np.nan, np.log(np.where(bad, 1.0, rms_batch)))
+    x_centered = x - x.mean()
+    x_var = float((x_centered ** 2).sum()) or 1.0
+    y_mean = np.nanmean(y, axis=1, keepdims=True)
+    y_centered = y - y_mean
+    num = np.nansum(y_centered * x_centered[None, :], axis=1)
+    return num / x_var
+
+
+def targeted_beta_batch(U, targets_batch, pool_indices, loads):
+    """Batched β: one β value per row of `targets_batch`."""
+    mu, sig2 = _pool_stats_batch(U, targets_batch, pool_indices)
+    rms = _rms_curve_batch(mu, sig2, loads)
+    return _fit_beta_batch(loads, rms)
 
 
 def bootstrap_beta(U, targets, pool, loads, n_boot=400, seed=0):
@@ -116,14 +191,16 @@ def bootstrap_beta(U, targets, pool, loads, n_boot=400, seed=0):
 
 def null_beta(U, k, pool, loads, candidate_targets=None,
               n_draws=400, seed=1):
-    """Uniform null: random k-feature targets, fixed distractor pool."""
+    """Uniform null: random k-feature targets, fixed distractor pool.
+    Uses the batched matmul path."""
     rng = np.random.default_rng(seed)
     cand = (np.arange(U.shape[0]) if candidate_targets is None
             else np.asarray(candidate_targets))
-    betas = np.empty(n_draws)
+    pool = np.asarray(pool, dtype=int)
+    targets_batch = np.empty((n_draws, k), dtype=int)
     for d in range(n_draws):
-        t = rng.choice(cand, size=k, replace=False)
-        betas[d] = targeted_beta(U, t, pool, loads)
+        targets_batch[d] = rng.choice(cand, size=k, replace=False)
+    betas = targeted_beta_batch(U, targets_batch, pool, loads)
     return betas[np.isfinite(betas)]
 
 
@@ -131,35 +208,51 @@ def null_beta(U, k, pool, loads, candidate_targets=None,
 
 def magnitude_matched_null_beta(U, selected, mag, pool, loads,
                                 n_draws=400, n_bins=20, tol=0.02,
-                                seed=2):
+                                seed=2,
+                                heartbeat_every=50,
+                                timeout_s=300):
     """Draw null target sets whose per-feature magnitude-bin histogram
     matches the selected set's, with selected features excluded.
 
-    Procedure:
-
+    Procedure (vectorized):
       1. Bin all features by percentile of `mag` into `n_bins` equal-
          quantile bins (over the FULL population).
-      2. For each draw, and for each selected feature s: draw ONE
-         feature from s's bin (excluding any selected feature and,
-         where possible, any feature already drawn in this draw). If
-         s's bin is empty after exclusion, widen to the nearest non-
-         empty bin and log the event.
-      3. Compute β with that drawn set as targets against `pool`.
+      2. For each selected feature, resolve a `source_bin` — its own
+         bin if non-empty after exclusion, else widen to the nearest
+         non-empty bin (this is deterministic per slot, computed once
+         outside the draw loop).
+      3. Group target slots by source_bin.
+      4. For each draw: for each source_bin, draw n_slots features
+         without replacement from that bin (with replacement only if
+         the bin is too small). `numpy.random.Generator.choice` is the
+         workhorse — no Python-level per-feature filtering.
+      5. Compute β with each drawn set as targets against `pool`.
 
-    Returns:
-        dict(
-            betas          (n_draws,) array of β values
-            widening_rate  fraction of per-feature draws that widened
-            mean, sd       summary of betas
-            n_bins         the bin count used
-            max_hist_dev   max |sel_hist[b] - null_hist[b]| across bins
-        )
+    Returns dict with `betas`, `widening_rate`, `mean`, `sd`, `n_bins`,
+    `max_hist_dev`.
 
-    HARD ASSERTS  max_hist_dev <= tol (default 0.02). On violation the
+    HARD-ASSERTS `max_hist_dev <= tol` (default 0.02). On violation the
     run fails with a message that includes the deviation and the
     widening_rate — to distinguish legitimate widening (a few features
     pushed to a neighbor bin) from structural drift toward uniform.
+
+    Emits a heartbeat to stdout every `heartbeat_every` draws (default
+    50) so a long run is visible in the container log. Raises
+    `TimeoutError` if total elapsed exceeds `timeout_s` (default 300s).
+
+    Performance notes:
+      - Inner loop is `n_draws * n_bins_used` numpy ops, not
+        `n_draws * k * pool_per_bin` Python ops. The previous design
+        called `int(x)` on every numpy scalar in every per-bin pool on
+        every draw, which extrapolated to ~30s on a fast host and 150+s
+        on Modal's T4 host CPU. The vectorized form runs in single-
+        digit seconds on a 16384-feature SAE.
+      - Histogram drift max_dev is computed exactly (per-draw bin
+        counts accumulated as integers), not via floating sums.
     """
+    import time
+
+    t0 = time.time()
     rng = np.random.default_rng(seed)
     selected = np.asarray(selected, dtype=int)
     n_features = U.shape[0]
@@ -179,54 +272,94 @@ def magnitude_matched_null_beta(U, selected, mag, pool, loads,
     sel_hist = (np.bincount(bin_of[selected], minlength=n_bins)
                 / len(selected))
 
-    excluded = set(int(i) for i in selected)
-    bin_pool = {b: [] for b in range(n_bins)}
-    for i, b in enumerate(bin_of):
-        if i not in excluded:
-            bin_pool[int(b)].append(i)
+    # Per-bin available index arrays (selected features excluded).
+    excluded_mask = np.zeros(n_features, dtype=bool)
+    excluded_mask[selected] = True
+    bin_arrays = []
     for b in range(n_bins):
-        bin_pool[b] = np.array(bin_pool[b], dtype=int)
+        in_bin = (bin_of == b) & ~excluded_mask
+        bin_arrays.append(np.where(in_bin)[0])
 
-    def widen_search(target_bin: int):
-        if len(bin_pool[target_bin]) > 0:
-            return bin_pool[target_bin], False
+    # Resolve source bin per selected target slot (widen if necessary).
+    sel_bins = bin_of[selected]
+    source_bins = np.empty(len(selected), dtype=int)
+    widened_flag = np.zeros(len(selected), dtype=bool)
+    for i, tb in enumerate(sel_bins):
+        tb = int(tb)
+        if len(bin_arrays[tb]) > 0:
+            source_bins[i] = tb
+            continue
+        found = False
         for offset in range(1, n_bins):
             for direction in (-1, 1):
-                b = target_bin + direction * offset
-                if 0 <= b < n_bins and len(bin_pool[b]) > 0:
-                    return bin_pool[b], True
-        raise RuntimeError(
-            "no non-empty bins remain; cannot construct magnitude-matched null")
+                b = tb + direction * offset
+                if 0 <= b < n_bins and len(bin_arrays[b]) > 0:
+                    source_bins[i] = b
+                    widened_flag[i] = True
+                    found = True
+                    break
+            if found:
+                break
+        if not found:
+            raise RuntimeError(
+                "no non-empty bins remain; cannot construct matched null")
 
-    betas = np.empty(n_draws)
-    widen_count = 0
-    total_per_feat_draws = 0
-    all_drawn_bins = []
+    # Group target slots by their source bin so we can sample one bin
+    # at a time with numpy-native rng.choice.
+    slots_by_bin = {}
+    for slot_i, sb in enumerate(source_bins):
+        slots_by_bin.setdefault(int(sb), []).append(slot_i)
+    slots_by_bin = {sb: np.asarray(slots, dtype=int)
+                    for sb, slots in slots_by_bin.items()}
 
+    # Step A: build all n_draws drawn sets (vectorized per-bin sampling)
+    all_drawn = np.empty((n_draws, len(selected)), dtype=int)
     for d in range(n_draws):
-        drawn = []
-        used = set()
-        for s in selected:
-            target_bin = int(bin_of[s])
-            total_per_feat_draws += 1
-            pool_arr, widened = widen_search(target_bin)
-            if widened:
-                widen_count += 1
-            candidates = [int(x) for x in pool_arr if int(x) not in used]
-            if not candidates:
-                candidates = [int(x) for x in pool_arr]
-            pick = int(rng.choice(candidates))
-            drawn.append(pick)
-            used.add(pick)
-        drawn_arr = np.array(drawn, dtype=int)
-        all_drawn_bins.append(bin_of[drawn_arr])
-        betas[d] = targeted_beta(U, drawn_arr, pool, loads)
+        if d > 0 and d % heartbeat_every == 0:
+            elapsed = time.time() - t0
+            print(f"  [matched-null] sampling draw {d}/{n_draws}  "
+                  f"elapsed {elapsed:.1f}s", flush=True)
+            if elapsed > timeout_s:
+                raise TimeoutError(
+                    f"magnitude_matched_null_beta exceeded timeout "
+                    f"({timeout_s}s) after {d} draws (sampling phase)")
+        for sb, slots in slots_by_bin.items():
+            pool_arr = bin_arrays[sb]
+            n_needed = len(slots)
+            if n_needed <= len(pool_arr):
+                picks = rng.choice(pool_arr, size=n_needed, replace=False)
+            else:
+                picks = rng.choice(pool_arr, size=n_needed, replace=True)
+            all_drawn[d, slots] = picks
 
-    widening_rate = float(widen_count / max(total_per_feat_draws, 1))
+    t_sample = time.time() - t0
+    print(f"  [matched-null] sampling done in {t_sample:.1f}s; "
+          f"running batched β fit ...", flush=True)
 
-    all_drawn_bins_flat = np.concatenate(all_drawn_bins)
-    null_hist = (np.bincount(all_drawn_bins_flat, minlength=n_bins)
-                 / len(all_drawn_bins_flat))
+    # Step B: one batched β fit across all n_draws drawn sets
+    pool_arr_for_beta = np.asarray(pool, dtype=int)
+    betas = targeted_beta_batch(U, all_drawn, pool_arr_for_beta, loads)
+
+    # Tally drawn-feature bin counts for the histogram assertion.
+    all_drawn_bin_counts = np.bincount(bin_of[all_drawn.ravel()],
+                                       minlength=n_bins).astype(np.int64)
+
+    elapsed = time.time() - t0
+    if elapsed > timeout_s:
+        raise TimeoutError(
+            f"magnitude_matched_null_beta exceeded timeout "
+            f"({timeout_s}s) total elapsed")
+    print(f"  [matched-null] done {n_draws} draws in {elapsed:.1f}s",
+          flush=True)
+
+    # widening_rate: source_bins is deterministic per slot in this
+    # vectorized form, so per-draw widening is constant. Reported as
+    # the fraction of target slots that widened — equivalent to the
+    # original "fraction of per-feature draws" semantics.
+    widening_rate = float(widened_flag.sum() / len(selected))
+
+    total_drawn = int(all_drawn_bin_counts.sum())
+    null_hist = all_drawn_bin_counts / total_drawn
     max_dev = float(np.max(np.abs(sel_hist - null_hist)))
     if max_dev > tol:
         raise AssertionError(
@@ -293,6 +426,8 @@ def view1_experiment(field: SuperpositionField, xling_indices,
         uniform null is reported. When provided, BOTH nulls are
         reported and the headline becomes cross_beta - null_matched_mean.
     """
+    import time
+
     rng = np.random.default_rng(seed)
     U = field.U
     n = field.n_features
@@ -312,30 +447,55 @@ def view1_experiment(field: SuperpositionField, xling_indices,
     else:
         loads_cross = loads_int = np.asarray(loads)
 
+    print(f"[view1_experiment] field={field.name}  d_model={field.d_model}  "
+          f"n_features={n}  k={k}  pool_size={pool_size}  "
+          f"n_boot={n_boot}  n_null={n_null}", flush=True)
+
     # CROSS-FIELD
+    t_phase = time.time()
+    print(f"  [phase] cross-field bootstrap ...", flush=True)
     cross = bootstrap_beta(U, xling, full_pool, loads_cross, n_boot, seed)
+    print(f"  [phase] cross-field bootstrap done in "
+          f"{time.time()-t_phase:.1f}s  beta={cross['beta']:.3f}",
+          flush=True)
+
+    t_phase = time.time()
+    print(f"  [phase] uniform null ({n_null} draws) ...", flush=True)
     cross_null_unif = null_beta(
         U, k, full_pool, loads_cross,
         candidate_targets=None, n_draws=n_null, seed=seed + 7,
     )
+    print(f"  [phase] uniform null done in {time.time()-t_phase:.1f}s",
+          flush=True)
     cz_u, cp_u, cmu_u, csd_u = _z_and_p(cross["beta"], cross_null_unif)
 
     matched = None
     cz_m = cp_m = cmu_m = csd_m = None
     if activation_magnitude is not None:
+        t_phase = time.time()
+        print(f"  [phase] magnitude-matched null ({n_null} draws) ...",
+              flush=True)
         matched = magnitude_matched_null_beta(
             U, xling, activation_magnitude, full_pool, loads_cross,
             n_draws=n_null, n_bins=n_bins, tol=hist_tol, seed=seed + 17,
         )
+        print(f"  [phase] matched null done in {time.time()-t_phase:.1f}s  "
+              f"widening_rate={matched['widening_rate']:.3f}  "
+              f"max_hist_dev={matched['max_hist_dev']:.3f}",
+              flush=True)
         cz_m, cp_m, cmu_m, csd_m = _z_and_p(cross["beta"], matched["betas"])
 
     # INTERNAL
+    t_phase = time.time()
+    print(f"  [phase] internal bootstrap + null ...", flush=True)
     intern = bootstrap_beta(U, xling, xling, loads_int, n_boot, seed)
     int_null = np.empty(n_null)
     for d in range(n_null):
         t = rng.choice(n, size=k, replace=False)
         int_null[d] = targeted_beta(U, t, t, loads_int)
     int_null = int_null[np.isfinite(int_null)]
+    print(f"  [phase] internal done in {time.time()-t_phase:.1f}s  "
+          f"internal_beta={intern['beta']:.3f}", flush=True)
     iz, ip, imu, isd = _z_and_p(intern["beta"], int_null)
 
     cross_out = dict(
