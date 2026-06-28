@@ -149,3 +149,83 @@ is making.
   active.
 
 — recorded at the close of this session, 2026
+
+---
+
+## Addendum — review of the superposition-interference extension
+
+Appended after a separate review of the parallel session's
+superposition-interference design (interference scaling exponent β,
+internal vs. cross-field, against a size-matched null). Scope of this
+addendum is **methodological dispositions only**. The renormalization
+framing and the Vygotskian language remain as essay-side notes — they
+are not committed as canonical findings here.
+
+### 1. Two first-class baseline fixes, sequenced
+
+The cross-field `β − null` number can be interpreted as evidence about
+cross-linguistic structure only after both of the following are in
+place. The order is load-bearing, not cosmetic:
+
+**(a) Activation-matched null.** Implemented and verified first. The
+cross-field null must draw target features whose per-feature magnitude
+bin histogram matches that of the selected cross-linguistic set, not
+uniformly from the population. The uniform null is kept alongside and
+both are reported; the gap between them is the magnitude contribution.
+
+**(b) Control-concept test.** Run once (a) is verified, with at least
+one concrete-noun control and one function-word control.
+
+**For the published Methods section, verbatim:**
+
+> Until the null is magnitude-matched, a function-word control could
+> fail to dip for magnitude reasons rather than semantic ones — so the
+> control-concept test is uninterpretable until the baseline is
+> magnitude-matched. The order is load-bearing, not cosmetic.
+
+### 2. Pooling decision
+
+**Last-token pooling** is adopted as the default for per-language
+activation extraction. This resolves the multi-token vs. single-token
+asymmetry across languages, which would otherwise confound the
+per-language quantile thresholds (a single-token *water* and a
+multi-token *água* are not directly comparable under mean-of-non-BOS
+pooling).
+
+**Carrier-sentence span extraction is deferred, not abandoned.** It is
+required for the publishable run. Before the selection run that
+produces the publishable number, the carrier sentence(s) and the
+span-end convention must be fixed in advance and recorded, since the
+carrier choice propagates through activations → feature selection → β.
+
+### 3. Terminology
+
+The measured quantity is named a **critical exponent** (scaling-analysis
+term). The renormalization language is retained as acknowledged analogy
+in essay and proposal contexts, not in the empirical findings or
+published methodology. Adopting the precise term zero-cost; the framing
+analogy is unaffected.
+
+### 4. Open dependency — cross-session SAE reconciliation
+
+Cross-comparison between the β study and the behavior–representation
+dissociation study is blocked until the parallel session (separate
+repository, `…-QV5SH`) confirms its SAE loader uses:
+
+```python
+sae_lens.SAE.from_pretrained(
+    release="gemma-scope-2b-pt-res-canonical",
+    sae_id=f"layer_{L}/width_16k/canonical",
+    ...
+)
+```
+
+Both strings must match byte-for-byte. The repo boundary prevents
+direct inspection from this branch; resolution must come from the
+parallel session as an explicit string confirmation (or, optionally,
+via a shared `W_dec`-hash assertion called at startup in both code
+paths).
+
+Recorded as **known-open**, not resolved.
+
+— addendum recorded after the superposition-interference review
