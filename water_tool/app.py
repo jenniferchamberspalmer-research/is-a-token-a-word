@@ -1,9 +1,10 @@
 """Gradio interface for the Water Pattern Tool.
 
-Three tabs (a fourth Interference tab is added in Part B):
-  1. Embedding Neighborhood (View 1)
-  2. Contextual Probability  (View 2)
-  3. Feature Activation      (View 3)
+Four tabs:
+  1. Embedding Neighborhood   (View 1)
+  2. Contextual Probability   (View 2)
+  3. Feature Activation       (View 3)
+  4. Interference (View 1 β)  (View 4 — superposition critical exponent)
 
 Each click runs through the Gradio queue with full progress visible to
 the user. Handler exceptions surface as gr.Error toasts so the UI is
@@ -19,6 +20,7 @@ import gradio as gr
 import pandas as pd
 
 from .views import embedding, probability, features as features_view
+from .views import interference as interference_view
 from .core.export import to_csv, to_json
 
 
@@ -133,12 +135,13 @@ INTRO = """
 # Water Pattern Tool
 
 An instrument for surfacing the statistical pattern that Gemma 2 2B
-(base, not instruction-tuned) carries about a word, across three
-layers of analysis:
+(base, not instruction-tuned) carries about a word, across four layers
+of analysis:
 
   - **View 1** — Embedding neighborhood. The static, dictionary-like layer.
   - **View 2** — Contextual next-token probability. The contextual layer.
   - **View 3** — Sparse-autoencoder feature activation. The internal-organization layer.
+  - **View 4** — Superposition interference (β critical exponent).
 
 The model and SAEs load once per container at startup. If you see a
 progress bar that runs for ~30 seconds on the very first click after
@@ -259,6 +262,78 @@ def build():
                 view3_run,
                 inputs=[v3_text, v3_target, v3_layer, v3_k],
                 outputs=[v3_out, v3_csv, v3_json],
+                show_progress="full",
+            )
+
+        # ----- View 4: Interference (β critical exponent) -----
+        with gr.Tab("View 4: Interference (β)"):
+            gr.Markdown(
+                "Measures the critical exponent β of signed interference vs "
+                "feature load at the chosen SAE layer. Two β values: "
+                "**internal** (the cross-linguistic cluster's interference "
+                "with itself) and **cross-field** (its interference against "
+                "the broader feature population). The headline metric is "
+                "`cross_beta − null_matched_mean`, against a **magnitude-"
+                "matched** null that controls for the activation-magnitude "
+                "bias of the selection step. The uniform null is reported "
+                "for contrast; the gap between the two nulls is itself "
+                "informative.\n\n"
+                "**Note on representation.** Feature selection operates on "
+                "SAE feature activations *at the chosen layer*, not on the "
+                "input embedding table directly. Translation equivalents "
+                "(water / agua / Wasser) cluster most tightly in the input "
+                "embedding (View 1 raw_lookup); later layers carry less of "
+                "that structure. If `selected_n` is very small at a late "
+                "layer, that's the model telling you the cross-linguistic "
+                "geometry has thinned there — try a shallower layer."
+            )
+            with gr.Row():
+                with gr.Column(scale=2):
+                    v4_concepts = gr.Textbox(
+                        label="Concepts (one language per line, 'lang: word')",
+                        value=interference_view.DEFAULT_CONCEPT_TEXT,
+                        lines=8,
+                    )
+                    v4_layer = gr.Slider(
+                        0, 25, value=12, step=1,
+                        label="SAE layer (0–25; 6/12/19 pre-warmed)",
+                    )
+                    v4_pooling = gr.Radio(
+                        choices=["last", "mean"],
+                        value="last",
+                        label="Pooling across sub-tokens",
+                    )
+                    v4_quantile = gr.Slider(
+                        0.80, 0.99, value=0.95, step=0.01,
+                        label="Per-language quantile threshold",
+                    )
+                    v4_min_langs = gr.Textbox(
+                        label="Min languages (blank or 'all' = every language)",
+                        value="",
+                    )
+                    v4_n_boot = gr.Slider(
+                        100, 800, value=400, step=50,
+                        label="n_boot (bootstrap resamples)",
+                    )
+                    v4_n_null = gr.Slider(
+                        100, 800, value=400, step=50,
+                        label="n_null (null draws per condition)",
+                    )
+                    v4_btn = gr.Button("Run", variant="primary")
+                with gr.Column(scale=3):
+                    v4_status = gr.Markdown()
+                    v4_out = gr.Dataframe(
+                        label="Interference summary",
+                        wrap=True,
+                    )
+                    v4_json = gr.File(label="Download JSON")
+            v4_btn.click(
+                interference_view.run_interference,
+                inputs=[
+                    v4_concepts, v4_layer, v4_pooling, v4_quantile,
+                    v4_min_langs, v4_n_boot, v4_n_null,
+                ],
+                outputs=[v4_out, v4_status, v4_json],
                 show_progress="full",
             )
 

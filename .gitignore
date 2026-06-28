@@ -1,0 +1,9 @@
+# Python bytecode caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Local scratch / temp / data
+.modal/
+*.swp
+.DS_Store
