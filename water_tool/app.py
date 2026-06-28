@@ -265,32 +265,43 @@ def build():
                 show_progress="full",
             )
 
-        # ----- View 4: Interference (β critical exponent) -----
+        # ----- View 4: Interference (β = interference_scaling_exponent) -----
         with gr.Tab("View 4: Interference (β)"):
             gr.Markdown(
-                "Measures the critical exponent β of signed interference vs "
-                "feature load at the chosen SAE layer. Two β values: "
-                "**internal** (the cross-linguistic cluster's interference "
-                "with itself) and **cross-field** (its interference against "
-                "the broader feature population). The headline metric is "
-                "`cross_beta − null_matched_mean`, against a **magnitude-"
-                "matched** null that controls for the activation-magnitude "
-                "bias of the selection step. The uniform null is reported "
-                "for contrast; the gap between the two nulls is itself "
-                "informative.\n\n"
-                "**Note on representation.** Feature selection operates on "
-                "SAE feature activations *at the chosen layer*, not on the "
-                "input embedding table directly. Translation equivalents "
-                "(water / agua / Wasser) cluster most tightly in the input "
-                "embedding (View 1 raw_lookup); later layers carry less of "
-                "that structure. If `selected_n` is very small at a late "
-                "layer, that's the model telling you the cross-linguistic "
-                "geometry has thinned there — try a shallower layer."
+                "Measures the **interference scaling exponent β** of signed "
+                "interference vs feature load at the chosen SAE layer. β is "
+                "the *analog of a critical exponent* in scaling analysis; "
+                "it is **not** a renormalization-group flow. Two β values: "
+                "**internal** (cluster vs itself) and **cross-field** "
+                "(cluster vs the broader population). Headline metric is "
+                "`β_cross − null_matched_mean`, with a 95% CI and a "
+                "significance flag (does the CI exclude zero).\n\n"
+                "**Selection mode.** *top_k* (default for sweeps) picks a "
+                "fixed cluster size — features ranked by the "
+                "`min_languages`-th highest per-language activation; layers "
+                "with too few firing features are flagged *insufficient* "
+                "rather than loosened. *quantile* is legacy and gives "
+                "variable k by layer.\n\n"
+                "**Shuffle control.** Optionally re-runs the pipeline with "
+                "each language's activation vector independently permuted "
+                "(preserving distribution, breaking cross-linguistic "
+                "correspondence). `headline_shuffled` should be near zero "
+                "if the real headline reflects genuine cross-linguistic "
+                "geometry; if it's similar to the real headline, the effect "
+                "is architectural rather than semantic.\n\n"
+                "**Note on representation.** Selection operates on SAE "
+                "feature activations *at the chosen layer*, not on the "
+                "input embedding table. Translation equivalents cluster "
+                "tightest in the input embedding (View 1 raw_lookup); "
+                "later layers carry less of that. A small `selected_n` at "
+                "a deep layer is the model telling you the cross-"
+                "linguistic geometry has thinned — try a shallower one."
             )
             with gr.Row():
                 with gr.Column(scale=2):
                     v4_concepts = gr.Textbox(
-                        label="Concepts (one language per line, 'lang: word')",
+                        label="Concepts (one language per line; "
+                              "comma-separate multiple words per language)",
                         value=interference_view.DEFAULT_CONCEPT_TEXT,
                         lines=8,
                     )
@@ -303,13 +314,27 @@ def build():
                         value="last",
                         label="Pooling across sub-tokens",
                     )
+                    v4_mode = gr.Radio(
+                        choices=["top_k", "quantile"],
+                        value="top_k",
+                        label="Selection mode",
+                    )
+                    v4_top_k = gr.Slider(
+                        5, 100, value=20, step=1,
+                        label="top_k (used when mode = top_k)",
+                    )
                     v4_quantile = gr.Slider(
-                        0.80, 0.99, value=0.95, step=0.01,
-                        label="Per-language quantile threshold",
+                        0.50, 0.99, value=0.90, step=0.01,
+                        label="quantile (used when mode = quantile)",
                     )
                     v4_min_langs = gr.Textbox(
                         label="Min languages (blank or 'all' = every language)",
                         value="",
+                    )
+                    v4_min_floor = gr.Number(
+                        value=0.0,
+                        label="min_activation_floor "
+                              "(features with score ≤ this are ineligible)",
                     )
                     v4_n_boot = gr.Slider(
                         100, 800, value=400, step=50,
@@ -318,6 +343,11 @@ def build():
                     v4_n_null = gr.Slider(
                         100, 800, value=400, step=50,
                         label="n_null (null draws per condition)",
+                    )
+                    v4_shuffle = gr.Checkbox(
+                        value=True,
+                        label="Compute shuffle control (permutation; "
+                              "should drive the headline ≈ 0)",
                     )
                     v4_btn = gr.Button("Run", variant="primary")
                 with gr.Column(scale=3):
@@ -330,8 +360,11 @@ def build():
             v4_btn.click(
                 interference_view.run_interference,
                 inputs=[
-                    v4_concepts, v4_layer, v4_pooling, v4_quantile,
-                    v4_min_langs, v4_n_boot, v4_n_null,
+                    v4_concepts, v4_layer, v4_pooling,
+                    v4_mode, v4_top_k, v4_quantile,
+                    v4_min_langs, v4_min_floor,
+                    v4_n_boot, v4_n_null,
+                    v4_shuffle,
                 ],
                 outputs=[v4_out, v4_status, v4_json],
                 show_progress="full",

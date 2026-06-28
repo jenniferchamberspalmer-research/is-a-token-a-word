@@ -411,42 +411,108 @@ def _z_and_p(observed, null):
 
 def select_crosslingual_features(acts_by_lang: dict,
                                  min_languages: int = None,
-                                 quantile: float = 0.9):
-    """Identify features active in the top (1 - quantile) of positive
-    activations across `min_languages` languages.
+                                 mode: str = "top_k",
+                                 top_k: int = 20,
+                                 quantile: float = 0.9,
+                                 min_activation_floor: float = 0.0,
+                                 return_info: bool = False):
+    """Identify cross-linguistic features.
 
-    acts_by_lang : {lang: vector(n_features)} of per-feature activation
-                   for the concept in that language.
-    Returns: integer index array of selected features.
+    Two modes:
 
-    Sparsity handling. Gemma Scope SAEs use JumpReLU non-linearities,
-    so the vast majority of feature activations on any single token
-    are EXACTLY ZERO. A naive `np.quantile(v, 0.95)` over a vector
-    where 99% of entries are zero returns 0, and `v >= 0` then selects
-    every feature — making the whole population "cross-linguistic" and
-    blowing up downstream tensor sizes.
+    ``top_k`` (default; canonical for sweeps).
+        For each feature, sort its per-language activations descending
+        and take the (``min_languages``)-th highest — the activation
+        the feature is "guaranteed" to have in at least that many
+        languages. Features with this score above ``min_activation_floor``
+        are eligible; the top ``top_k`` by score are returned. If
+        fewer than ``top_k`` eligible features exist, the layer is
+        flagged ``insufficient`` (in the info dict) — selection does
+        NOT loosen the floor to fill, so depth-sweep counts remain
+        comparable across layers.
 
-    Fix: the threshold is computed over STRICTLY POSITIVE activations
-    only (`v[v > 0]`), and a feature only counts as active in a
-    language if it is BOTH (a) strictly positive AND (b) at or above
-    that language-specific positive-quantile threshold. The strict-
-    positive guard makes the selection robust to arbitrary zero-mass
-    in the activation distribution.
+    ``quantile`` (legacy).
+        Per-language, threshold at the ``quantile``-th percentile of
+        strictly positive activations; a feature counts as active in
+        a language if it is BOTH strictly positive AND ≥ threshold;
+        select features active in ``min_languages`` languages. Kept
+        for backwards comparison; not recommended for sweeps because k
+        varies by layer.
+
+    The strict-positive guard (in both modes) is essential for Gemma
+    Scope JumpReLU activations, where ~99% of features are exactly
+    zero on a single token and a naive quantile collapses to zero.
+
+    Returns either the integer index array (default) or, if
+    ``return_info=True``, a (indices, info_dict) tuple where info_dict
+    carries the actual_k, insufficient flag, mode, and the score
+    threshold used.
     """
     langs = list(acts_by_lang)
     n_features = len(next(iter(acts_by_lang.values())))
     if min_languages is None:
         min_languages = len(langs)
-    active = np.zeros(n_features, dtype=int)
-    for lang in langs:
-        v = np.asarray(acts_by_lang[lang], dtype=float)
-        positive = v[v > 0]
-        if len(positive) == 0:
-            # No feature fired for this language; nothing to threshold.
-            continue
-        thr = float(np.quantile(positive, quantile))
-        active += ((v > 0) & (v >= thr)).astype(int)
-    return np.where(active >= min_languages)[0]
+    if min_languages > len(langs):
+        min_languages = len(langs)
+    if min_languages < 1:
+        min_languages = 1
+
+    if mode == "top_k":
+        # Stack per-language activations (n_lang, n_features), then
+        # for each feature sort descending across languages and pick
+        # the (min_languages-1)-th entry — the activation the feature
+        # is guaranteed in at least min_languages languages.
+        acts_arr = np.stack(
+            [np.asarray(acts_by_lang[lang], dtype=float) for lang in langs]
+        )                                            # (n_lang, n_features)
+        sorted_desc = -np.sort(-acts_arr, axis=0)    # (n_lang, n_features)
+        score = sorted_desc[min_languages - 1]       # (n_features,)
+        eligible_mask = score > float(min_activation_floor)
+        eligible_idx = np.where(eligible_mask)[0]
+        if len(eligible_idx) == 0:
+            indices = np.array([], dtype=int)
+            score_threshold = 0.0
+        else:
+            order = np.argsort(-score[eligible_idx])
+            take = min(int(top_k), len(eligible_idx))
+            indices = eligible_idx[order[:take]]
+            score_threshold = float(score[indices[-1]])
+        actual_k = int(len(indices))
+        info = dict(
+            mode="top_k",
+            requested_k=int(top_k),
+            actual_k=actual_k,
+            insufficient=bool(actual_k < int(top_k)),
+            min_languages=int(min_languages),
+            min_activation_floor=float(min_activation_floor),
+            score_threshold=score_threshold,
+            n_eligible=int(len(eligible_idx)),
+        )
+
+    elif mode == "quantile":
+        active = np.zeros(n_features, dtype=int)
+        for lang in langs:
+            v = np.asarray(acts_by_lang[lang], dtype=float)
+            positive = v[v > 0]
+            if len(positive) == 0:
+                continue
+            thr = float(np.quantile(positive, quantile))
+            active += ((v > 0) & (v >= thr)).astype(int)
+        indices = np.where(active >= min_languages)[0]
+        info = dict(
+            mode="quantile",
+            quantile=float(quantile),
+            actual_k=int(len(indices)),
+            insufficient=False,
+            min_languages=int(min_languages),
+        )
+
+    else:
+        raise ValueError(f"unknown selection mode: {mode!r}")
+
+    if return_info:
+        return indices, info
+    return indices
 
 
 # ------------------------------------------------------- entry point
@@ -553,8 +619,44 @@ def view1_experiment(field: SuperpositionField, xling_indices,
           f"internal_beta={intern['beta']:.3f}", flush=True)
     iz, ip, imu, isd = _z_and_p(intern["beta"], int_null)
 
+    # Headline CI: bootstrap distribution of (cross_beta - null_mean).
+    # Significance = the 95% CI excludes zero. This makes the depth
+    # profile readable as runs of same-sign significant layers, rather
+    # than eyeballed.
+    null_mean_for_headline = cmu_m if matched is not None else cmu_u
+    headline_boot = cross["boot"] - null_mean_for_headline
+    headline_ci_lo = float(np.percentile(headline_boot, 2.5))
+    headline_ci_hi = float(np.percentile(headline_boot, 97.5))
+    headline_significant = bool(
+        headline_ci_lo > 0 or headline_ci_hi < 0
+    )
+
+    # Per-feature cosine statistics (μ, σ²) for the selected set
+    # against the full pool — exactly the quantities the closed-form
+    # RMS curve consumes. Surfaced here so the result is interpretable
+    # at the level of the underlying interference geometry, not just β.
+    mu_sel, sig2_sel = _pool_stats(U, xling, full_pool)
+    cosine_stats = dict(
+        per_feature_mu=mu_sel.tolist(),
+        per_feature_sig2=sig2_sel.tolist(),
+        summary=dict(
+            mu_mean=float(np.mean(mu_sel)),
+            mu_std=float(np.std(mu_sel)),
+            mu_min=float(np.min(mu_sel)),
+            mu_max=float(np.max(mu_sel)),
+            sig2_mean=float(np.mean(sig2_sel)),
+            sig2_std=float(np.std(sig2_sel)),
+            sig2_min=float(np.min(sig2_sel)),
+            sig2_max=float(np.max(sig2_sel)),
+        ),
+    )
+
     cross_out = dict(
-        beta=cross["beta"], ci=(cross["lo"], cross["hi"]),
+        # Honest labeling: this is the analog of a critical exponent
+        # in scaling analysis, NOT a renormalization-group flow.
+        interference_scaling_exponent=cross["beta"],
+        beta=cross["beta"],                          # alias
+        ci=(cross["lo"], cross["hi"]),
         null_unif=cross_null_unif,
         null_unif_mean=cmu_u, null_unif_sd=csd_u,
         z_unif=cz_u, p_unif=cp_u,
@@ -565,6 +667,18 @@ def view1_experiment(field: SuperpositionField, xling_indices,
         widening_rate=(matched["widening_rate"] if matched else None),
         max_hist_dev=(matched["max_hist_dev"] if matched else None),
         n_bins=(matched["n_bins"] if matched else None),
+        # Bands & significance:
+        headline_ci_lo=headline_ci_lo,
+        headline_ci_hi=headline_ci_hi,
+        headline_significant=headline_significant,
+        # Cosine geometry (analytic ingredients of β):
+        cosine_stats=cosine_stats,
+        # Honest-labeling note (consumed by JSON writer in the view):
+        note=(
+            "interference_scaling_exponent: analog of a critical "
+            "exponent (scaling-analysis term); NOT a renormalization-"
+            "group flow."
+        ),
     )
 
     res = dict(
