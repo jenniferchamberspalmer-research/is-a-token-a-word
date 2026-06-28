@@ -44,7 +44,7 @@ def load():
     _model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         token=token,
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
         device_map=get_device(),
     )
     _model.eval()
