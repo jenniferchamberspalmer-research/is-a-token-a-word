@@ -45,7 +45,7 @@ View 1, embedding neighbors. Top k = 50, static embedding, cosine. Two passes: u
 
 View 5, single-word pairwise trajectory. Per layer 0 to 25: cosine and rank of each translation equivalent to the source word. Reported per item: the layer range over which translations are nearest neighbors, and the layer at which rank collapses.
 
-View 6, neighborhood dynamics. Top N = 100 primary, N = 50 and N = 200 as mandatory robustness. Per layer 0 to 25, for source translations, within-language synonyms, and control equivalents: Jaccard, reciprocal-rank-weighted overlap, mean rank of shared neighbors, count of shared neighbors. Headline per item: per-layer translation-mean Jaccard against control-mean Jaccard, with band separation reported as translation-minimum versus control-maximum.
+View 6, neighborhood dynamics. Top N = 100 primary, N = 50 and N = 200 as mandatory robustness. Computed across all layers 0 to 25. The pre-committed primary test is the early band, layers 0 to 9; the secondary exploratory band is layers 10 to 13. Both windows are fixed here in advance, before any run, so neither is a selection made after seeing where separation appears. Per layer, for source translations, within-language synonyms, and control equivalents: Jaccard, reciprocal-rank-weighted overlap, mean rank of shared neighbors, count of shared neighbors. Headline per item: per-layer translation-mean Jaccard against control-mean Jaccard, with band separation reported as translation-minimum versus control-maximum.
 
 ## Interpretive frame, fixed before any output is read
 
