@@ -166,8 +166,13 @@ def _make_plots(layers, pairs_data: list, out_dir: str) -> str:
     disconfirm test (translation mean vs control mean), and cutoff
     sensitivity. Returns the PNG path.
 
-    pairs_data: list of dicts {label, class, metrics_n50, metrics_n100,
-    metrics_n200}.
+    pairs_data: list of dicts {label, cls, metrics_n50, metrics_n100,
+    metrics_n200}. The INTERNAL class key is "cls" — `class` is a
+    Python reserved word so dict(class=...) keyword construction is
+    illegal, and using two keys for the same field (cls internally,
+    class in JSON) is exactly what caused the KeyError. Read "cls"
+    everywhere internally; only emit "class" in the output JSON the
+    user sees.
     """
     import matplotlib
     matplotlib.use("Agg")
@@ -184,7 +189,7 @@ def _make_plots(layers, pairs_data: list, out_dir: str) -> str:
 
     # Plot 1: Jaccard (headline N=100) per pair
     for p in pairs_data:
-        st = style_for.get(p["class"], style_for["trans"])
+        st = style_for.get(p["cls"], style_for["trans"])
         ax1.plot(layers, p["metrics_n100"]["jaccard"],
                  label=p["label"], **st)
     ax1.set_title(f"Plot 1 — Jaccard overlap (N={HEADLINE_N}, headline)")
@@ -196,7 +201,7 @@ def _make_plots(layers, pairs_data: list, out_dir: str) -> str:
 
     # Plot 2: Reciprocal-rank-weighted overlap (headline N=100) per pair
     for p in pairs_data:
-        st = style_for.get(p["class"], style_for["trans"])
+        st = style_for.get(p["cls"], style_for["trans"])
         ax2.plot(layers, p["metrics_n100"]["rr_weighted"],
                  label=p["label"], **st)
     ax2.set_title(f"Plot 2 — reciprocal-rank-weighted overlap "
@@ -209,9 +214,9 @@ def _make_plots(layers, pairs_data: list, out_dir: str) -> str:
 
     # Plot 3: Disconfirm test — translation mean vs control mean
     trans_jaccs = np.array([p["metrics_n100"]["jaccard"] for p in pairs_data
-                            if p["class"] == "trans"])
+                            if p["cls"] == "trans"])
     ctl_jaccs = np.array([p["metrics_n100"]["jaccard"] for p in pairs_data
-                          if p["class"] == "ctl"])
+                          if p["cls"] == "ctl"])
     if trans_jaccs.size:
         ax3.plot(layers, trans_jaccs.mean(axis=0),
                  label="translations (mean)", color="tab:blue", linewidth=2)
@@ -237,7 +242,7 @@ def _make_plots(layers, pairs_data: list, out_dir: str) -> str:
         for N, color in [(50, "tab:orange"), (100, "tab:blue"),
                          (200, "tab:green")]:
             arrs = np.array([p[f"metrics_n{N}"]["jaccard"]
-                             for p in pairs_data if p["class"] == "trans"])
+                             for p in pairs_data if p["cls"] == "trans"])
             ax4.plot(layers, arrs.mean(axis=0), label=f"N={N}",
                      color=color, linewidth=2)
     ax4.set_title("Plot 4 — cutoff sensitivity (translation Jaccard mean)")
