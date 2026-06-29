@@ -1,0 +1,3 @@
+Item,Colliding token(s),Clean subset,Effect
+bread,"es:pan, fr:pain, it:pane","de:Brot, pt:pão","Homograph translations collide with English nouns (cooking pan, suffering, window pane). Early-band median ranks of the homographs: pan ≈ 15.0k; pain ≈ 3.9k; pane ≈ 7.8k. Clean-subset early-band medians: Brot ≈ 20; pão ≈ 16. Item-level Table-4 median (509) is dominated by the homographs; clean-subset median ≈ 18."
+dog,it:cane,"es:perro, fr:chien, de:Hund, pt:cão","""cane"" collides with English noun (walking stick). Early-band median rank of cane = 95 313 (range 46k–134k); clean-subset medians: perro ≈ 37, chien ≈ 18, Hund ≈ 2 977, cão ≈ 40. Item-level Table-4 median (80) is elevated by cane; with cane removed the median drops to ≈ 37."
