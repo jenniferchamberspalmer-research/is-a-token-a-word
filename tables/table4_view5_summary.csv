@@ -1,7 +1,7 @@
-Item,k translations,early-band median trans rank,early-band median ctl rank,collapse layer (median > 10^4),Notes
-water,5,32,65,9,"Five clean translations; agua, Wasser, água lead"
-brother,5,20,65,10,Five clean translations; frère leads; collapse one layer later (L10)
-stone,5,27,65,9,Five clean translations; piedra and pedra lead; fr:pierre mildly elevated by name-homograph
-fear,5,26,65,10,Five translations; de:Angst rises sharply by L7 (≈ 14.9k) and L8 (≈ 17.1k); collapse at L10
-dog,5,80,65,9,"Four clean translations + one homograph (it:cane → English ""cane""); see Table 6"
-bread,5,509,65,9,"Three homographs (pan/pain/pane) dominate; clean subset (Brot, pão) early-band median ≈ 18; see Table 6"
+Item,k translations (screened),early-band median trans rank (screened),early-band median ctl rank,"collapse layer (per-layer median > 10^4, L >= 9)",Notes
+water,5,32,65,9,Five clean translations; no homograph drops.
+brother,5,20,65,10,Five clean translations; no homograph drops; de:Bruder kept as weak binder.
+stone,5,27,65,9,"Five clean translations; fr:pierre kept (mild name-overlap only, not a homograph)."
+fear,5,26,65,10,Five clean translations; de:Angst kept as weak binder.
+dog,4,39,65,9,Four screened translations; it:cane dropped (English homograph). See Table 6.
+bread,2,17,65,10,"Two screened translations (de:Brot, pt:pão); es:pan, fr:pain, it:pane dropped (English homographs). See Table 6."

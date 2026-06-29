@@ -1,12 +1,12 @@
 # Table 4 — View 5 summary (early-band rank medians)
 
-Early band = layers 0–8. Translation rank = rank of the translation's last-token id in the source's vocab cosines at that layer (0-indexed; smaller = better). Median taken over 5 translations × 9 layers = 45 values per item. Control = chair: same computation against chair's residual (the V5 control trajectory). Collapse layer = first layer where the per-layer median translation rank exceeds 10^4. All values computed from `data/processed/view5/view5_<item>_chair.json`.
+Early band = layers 0–8 inclusive. Homograph screening is applied BEFORE any statistic: dog drops it:cane; bread drops es:pan, fr:pain, it:pane; the other items are unscreened. Translation rank = rank of the translation's last-token id in the source's vocab cosines at that layer (0-indexed; smaller = better). Early-band median trans rank = median of the pooled screened-translation ranks across L0–8. Early-band median ctl rank = identical pooled-median computation on the five chair-control equivalents, per item (rank is source-relative). Collapse layer = first L >= 9 at which the per-layer median of the screened-translation ranks exceeds 10^4. All values computed from `data/processed/view5/view5_<item>_chair.json` by `paper0/build_tables.py`; no seeded values.
 
-| Item | k translations | early-band median trans rank | early-band median ctl rank | collapse layer (median > 10^4) | Notes |
+| Item | k translations (screened) | early-band median trans rank (screened) | early-band median ctl rank | collapse layer (per-layer median > 10^4, L >= 9) | Notes |
 | --- | --- | --- | --- | --- | --- |
-| water | 5 | 32 | 65 | 9 | Five clean translations; agua, Wasser, água lead |
-| brother | 5 | 20 | 65 | 10 | Five clean translations; frère leads; collapse one layer later (L10) |
-| stone | 5 | 27 | 65 | 9 | Five clean translations; piedra and pedra lead; fr:pierre mildly elevated by name-homograph |
-| fear | 5 | 26 | 65 | 10 | Five translations; de:Angst rises sharply by L7 (≈ 14.9k) and L8 (≈ 17.1k); collapse at L10 |
-| dog | 5 | 80 | 65 | 9 | Four clean translations + one homograph (it:cane → English "cane"); see Table 6 |
-| bread | 5 | 509 | 65 | 9 | Three homographs (pan/pain/pane) dominate; clean subset (Brot, pão) early-band median ≈ 18; see Table 6 |
+| water | 5 | 32 | 65 | 9 | Five clean translations; no homograph drops. |
+| brother | 5 | 20 | 65 | 10 | Five clean translations; no homograph drops; de:Bruder kept as weak binder. |
+| stone | 5 | 27 | 65 | 9 | Five clean translations; fr:pierre kept (mild name-overlap only, not a homograph). |
+| fear | 5 | 26 | 65 | 10 | Five clean translations; de:Angst kept as weak binder. |
+| dog | 4 | 39 | 65 | 9 | Four screened translations; it:cane dropped (English homograph). See Table 6. |
+| bread | 2 | 17 | 65 | 10 | Two screened translations (de:Brot, pt:pão); es:pan, fr:pain, it:pane dropped (English homographs). See Table 6. |

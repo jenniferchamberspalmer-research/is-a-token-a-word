@@ -34,6 +34,19 @@ ITEMS = ["water", "brother", "stone", "fear", "dog", "bread"]
 CONTROLS = ["chair", "window", "bird"]
 LANGS = ["es", "fr", "de", "it", "pt"]
 
+# Homograph screening — applied BEFORE any Table 4 statistic.
+# Drop translations whose last-token id collides with a productive English
+# noun (verified empirically: early-band median > 2 orders of magnitude
+# above sister translations). Weak binders (de:Hund, de:Bruder, de:Angst)
+# are not homographs and are kept.
+HOMOGRAPH_DROPS = {
+    "dog":   {"it"},              # it:cane -> English noun "cane"
+    "bread": {"es", "fr", "it"},  # es:pan, fr:pain, it:pane
+}
+EARLY_BAND = slice(0, 9)          # layers 0-8 inclusive
+COLLAPSE_THRESHOLD = 10_000
+COLLAPSE_MIN_LAYER = 9
+
 
 # -------------------- CSV / MD writers --------------------
 
@@ -246,53 +259,81 @@ def build_table3() -> None:
 
 # -------------------- table 4 — View 5 medians --------------------
 
+def _screened_trans_keys(item: str, trajectory: dict) -> tuple[list, list]:
+    """Return (kept, dropped) translation keys for an item after homograph screening."""
+    drops = HOMOGRAPH_DROPS.get(item, set())
+    trans = [k for k, v in trajectory.items() if v["class"] == "trans"]
+    kept = [k for k in trans if k.split(":")[0] not in drops]
+    dropped = [k for k in trans if k.split(":")[0] in drops]
+    return kept, dropped
+
+
+def compute_table4_row(item: str) -> dict:
+    """Compute the canonical Table 4 row for an item.
+
+    Statistical definitions (one method, applied identically per item):
+      * Homograph screening — drop translations whose language is listed in
+        HOMOGRAPH_DROPS[item] before any statistic.
+      * Early-band median = median of the pooled screened-translation ranks
+        across layers 0-8 inclusive.
+      * Chair-control median = median of the pooled chair-control ranks
+        across layers 0-8 inclusive (computed per item from the same V5 file).
+      * Collapse layer = first L >= 9 at which the per-layer median of the
+        screened-translation ranks exceeds 10^4.
+    """
+    j = json.loads((DATA_V5 / f"view5_{item}_chair.json").read_text())
+    traj = j["trajectory"]
+    kept, dropped = _screened_trans_keys(item, traj)
+    ctl_keys = [k for k, v in traj.items() if v["class"] == "ctl"]
+
+    trans_eb = [r for k in kept for r in traj[k]["rank_per_layer"][EARLY_BAND]]
+    ctl_eb = [r for k in ctl_keys for r in traj[k]["rank_per_layer"][EARLY_BAND]]
+    med_t = int(statistics.median(trans_eb))
+    med_c = int(statistics.median(ctl_eb))
+
+    collapse = None
+    for L in range(COLLAPSE_MIN_LAYER, len(j["layers"])):
+        vals = [traj[k]["rank_per_layer"][L] for k in kept]
+        if statistics.median(vals) > COLLAPSE_THRESHOLD:
+            collapse = j["layers"][L]
+            break
+
+    return {
+        "item": item,
+        "kept_keys": kept,
+        "dropped_keys": dropped,
+        "k_kept": len(kept),
+        "med_trans": med_t,
+        "med_ctl": med_c,
+        "collapse_layer": collapse,
+    }
+
+
 def build_table4() -> None:
     header = [
-        "Item", "k translations", "early-band median trans rank",
-        "early-band median ctl rank", "collapse layer (median > 10^4)",
+        "Item", "k translations (screened)",
+        "early-band median trans rank (screened)",
+        "early-band median ctl rank",
+        "collapse layer (per-layer median > 10^4, L >= 9)",
         "Notes",
     ]
 
     notes = {
-        "water":   "Five clean translations; agua, Wasser, água lead",
-        "brother": "Five clean translations; frère leads; collapse one layer later (L10)",
-        "stone":   "Five clean translations; piedra and pedra lead; fr:pierre mildly elevated by name-homograph",
-        "fear":    "Five translations; de:Angst rises sharply by L7 (≈ 14.9k) and L8 (≈ 17.1k); collapse at L10",
-        "dog":     "Four clean translations + one homograph (it:cane → English \"cane\"); see Table 6",
-        "bread":   "Three homographs (pan/pain/pane) dominate; clean subset (Brot, pão) early-band median ≈ 18; see Table 6",
+        "water":   "Five clean translations; no homograph drops.",
+        "brother": "Five clean translations; no homograph drops; de:Bruder kept as weak binder.",
+        "stone":   "Five clean translations; fr:pierre kept (mild name-overlap only, not a homograph).",
+        "fear":    "Five clean translations; de:Angst kept as weak binder.",
+        "dog":     "Four screened translations; it:cane dropped (English homograph). See Table 6.",
+        "bread":   "Two screened translations (de:Brot, pt:pão); es:pan, fr:pain, it:pane dropped (English homographs). See Table 6.",
     }
 
     rows = []
     for item in ITEMS:
-        p = DATA_V5 / f"view5_{item}_chair.json"
-        if not p.exists():
-            rows.append([item, "—", "—", "—", "—",
-                         "Provisional — no V5 JSON committed yet"])
-            continue
-        j = json.loads(p.read_text())
-        trans_keys = [k for k, v in j["trajectory"].items()
-                      if v["class"] == "trans"]
-        ctl_keys = [k for k, v in j["trajectory"].items()
-                    if v["class"] == "ctl"]
-        trans_eb = []
-        for k in trans_keys:
-            trans_eb.extend(j["trajectory"][k]["rank_per_layer"][:9])
-        ctl_eb = []
-        for k in ctl_keys:
-            ctl_eb.extend(j["trajectory"][k]["rank_per_layer"][:9])
-        med_t = int(statistics.median(trans_eb))
-        med_c = int(statistics.median(ctl_eb))
-
-        # collapse layer: per-layer median across translations
-        collapse = "—"
-        for L in range(len(j["layers"])):
-            vals = [j["trajectory"][k]["rank_per_layer"][L]
-                    for k in trans_keys]
-            if statistics.median(vals) > 10000:
-                collapse = j["layers"][L]
-                break
+        r = compute_table4_row(item)
         rows.append([
-            item, len(trans_keys), med_t, med_c, collapse, notes[item],
+            item, r["k_kept"], r["med_trans"], r["med_ctl"],
+            r["collapse_layer"] if r["collapse_layer"] is not None else "—",
+            notes[item],
         ])
 
     write_csv(OUT_CSV / "table4_view5_summary.csv", header, rows)
@@ -300,60 +341,117 @@ def build_table4() -> None:
         OUT_MD / "table4_view5_summary.md", header, rows,
         title="Table 4 — View 5 summary (early-band rank medians)",
         prelude=(
-            "Early band = layers 0–8. Translation rank = rank of the "
-            "translation's last-token id in the source's vocab cosines at "
-            "that layer (0-indexed; smaller = better). Median taken over "
-            "5 translations × 9 layers = 45 values per item. Control = "
-            "chair: same computation against chair's residual (the V5 "
-            "control trajectory). Collapse layer = first layer where the "
-            "per-layer median translation rank exceeds 10^4. All values "
-            "computed from `data/processed/view5/view5_<item>_chair.json`."
+            "Early band = layers 0–8 inclusive. Homograph screening is "
+            "applied BEFORE any statistic: dog drops it:cane; bread drops "
+            "es:pan, fr:pain, it:pane; the other items are unscreened. "
+            "Translation rank = rank of the translation's last-token id in "
+            "the source's vocab cosines at that layer (0-indexed; smaller = "
+            "better). Early-band median trans rank = median of the pooled "
+            "screened-translation ranks across L0–8. Early-band median ctl "
+            "rank = identical pooled-median computation on the five "
+            "chair-control equivalents, per item (rank is source-relative). "
+            "Collapse layer = first L >= 9 at which the per-layer median of "
+            "the screened-translation ranks exceeds 10^4. All values "
+            "computed from `data/processed/view5/view5_<item>_chair.json` "
+            "by `paper0/build_tables.py`; no seeded values."
         ),
     )
 
 
 # -------------------- table 6 — homograph screening --------------------
 
+def _per_translation_eb_median(item: str, key: str) -> int:
+    """Early-band median rank for a single translation key in item's V5 file."""
+    j = json.loads((DATA_V5 / f"view5_{item}_chair.json").read_text())
+    return int(statistics.median(
+        j["trajectory"][key]["rank_per_layer"][EARLY_BAND]
+    ))
+
+
+def _unscreened_eb_median(item: str) -> int:
+    """Pre-screening pooled L0-8 median of all five translations.
+
+    Reported here as the magnitude the homograph drops correct away from;
+    not used as a Table 4 value.
+    """
+    j = json.loads((DATA_V5 / f"view5_{item}_chair.json").read_text())
+    trans = [v for v in j["trajectory"].values() if v["class"] == "trans"]
+    vals = [r for v in trans for r in v["rank_per_layer"][EARLY_BAND]]
+    return int(statistics.median(vals))
+
+
 def build_table6() -> None:
-    header = ["Item", "Colliding token(s)", "Clean subset", "Effect"]
-    rows = [
-        [
-            "bread",
-            "es:pan, fr:pain, it:pane",
-            "de:Brot, pt:pão",
-            ("Homograph translations collide with English nouns "
-             "(cooking pan, suffering, window pane). Early-band median "
-             "ranks of the homographs: pan ≈ 15.0k; pain ≈ 3.9k; pane ≈ "
-             "7.8k. Clean-subset early-band medians: Brot ≈ 20; pão ≈ "
-             "16. Item-level Table-4 median (509) is dominated by the "
-             "homographs; clean-subset median ≈ 18."),
-        ],
-        [
-            "dog",
-            "it:cane",
-            "es:perro, fr:chien, de:Hund, pt:cão",
-            ("\"cane\" collides with English noun (walking stick). "
-             "Early-band median rank of cane = 95 313 (range 46k–134k); "
-             "clean-subset medians: perro ≈ 37, chien ≈ 18, Hund ≈ "
-             "2 977, cão ≈ 40. Item-level Table-4 median (80) is "
-             "elevated by cane; with cane removed the median drops to "
-             "≈ 37."),
-        ],
-    ]
+    header = ["Item", "Colliding token(s)", "Clean subset",
+              "Pre-screening pooled median (L0–8, all 5)",
+              "Screened (Table 4) median", "Effect"]
+
+    # Lookup helpers — all numbers derived from the V5 JSONs.
+    def fmt_med(item, key):
+        return f"{_per_translation_eb_median(item, key):,}"
+
+    rows = []
+
+    # bread
+    bread = compute_table4_row("bread")
+    bread_effect = (
+        "Homograph translations collide with English nouns (cooking pan, "
+        "suffering, window pane). Per-translation early-band medians: "
+        f"pan = {fmt_med('bread', 'es:pan')}; "
+        f"pain = {fmt_med('bread', 'fr:pain')}; "
+        f"pane = {fmt_med('bread', 'it:pane')}; "
+        f"Brot = {fmt_med('bread', 'de:Brot')}; "
+        f"pão = {fmt_med('bread', 'pt:pão')}. "
+        "Without screening, the homographs dominate the pooled median; "
+        "the Table 4 value uses the clean (de:Brot, pt:pão) subset."
+    )
+    rows.append([
+        "bread",
+        "es:pan, fr:pain, it:pane",
+        "de:Brot, pt:pão",
+        f"{_unscreened_eb_median('bread'):,}",
+        f"{bread['med_trans']:,} (k = {bread['k_kept']})",
+        bread_effect,
+    ])
+
+    # dog
+    dog = compute_table4_row("dog")
+    dog_effect = (
+        "it:cane collides with the English noun \"cane\" (walking stick). "
+        "Per-translation early-band medians: "
+        f"cane = {fmt_med('dog', 'it:cane')}; "
+        f"perro = {fmt_med('dog', 'es:perro')}; "
+        f"chien = {fmt_med('dog', 'fr:chien')}; "
+        f"Hund = {fmt_med('dog', 'de:Hund')}; "
+        f"cão = {fmt_med('dog', 'pt:cão')}. "
+        "Without screening, cane lifts the pooled median; the Table 4 "
+        "value drops cane and pools the other four."
+    )
+    rows.append([
+        "dog",
+        "it:cane",
+        "es:perro, fr:chien, de:Hund, pt:cão",
+        f"{_unscreened_eb_median('dog'):,}",
+        f"{dog['med_trans']:,} (k = {dog['k_kept']})",
+        dog_effect,
+    ])
+
     write_csv(OUT_CSV / "table6_homograph_screening.csv", header, rows)
     write_md(
         OUT_MD / "table6_homograph_screening.md", header, rows,
         title="Table 6 — Homograph screening",
         prelude=(
-            "Computed from `data/processed/view5/view5_<item>_chair.json`. "
-            "Colliding token(s) = translations whose last-token id is also "
-            "a productive English token, so the rank of that id in the "
-            "source's vocab cosines reflects an English meaning rather "
-            "than the intended translation. Identified empirically: a "
-            "translation whose early-band median rank is >2 orders of "
-            "magnitude higher than its sister translations of the same "
-            "item is flagged. Stone's `fr:pierre` is mildly elevated by "
-            "the proper-name overlap but does not meet this threshold."
+            "All numeric values computed from "
+            "`data/processed/view5/view5_<item>_chair.json` by "
+            "`paper0/build_tables.py`. Colliding token(s) = translations "
+            "whose last-token id is also a productive English token, so "
+            "the rank of that id in the source's vocab cosines reflects an "
+            "English meaning rather than the intended translation. "
+            "Identified empirically: a translation whose early-band median "
+            "rank is >2 orders of magnitude higher than its sister "
+            "translations of the same item is flagged. Stone's `fr:pierre` "
+            "is mildly elevated by the proper-name overlap but does not "
+            "meet this threshold and is kept. Per-translation medians are "
+            "the median of layers 0–8 inclusive."
         ),
     )
 
