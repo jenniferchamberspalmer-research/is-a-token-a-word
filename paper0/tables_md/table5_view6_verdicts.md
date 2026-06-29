@@ -1,27 +1,12 @@
 # Table 5 — View 6 verdicts
 
-**DRAFT — PENDING CHATGPT CLAIM PASS. DO NOT CITE.**
+Verdicts transcribed verbatim from the reviewed draft of `table5_view6_verdicts.md`. Verdicts are not computed from data; the underlying numeric evidence lives in `data/processed/view6/`. Cleared by the ChatGPT claim pass.
 
-Per the run-sheet rule for this table:
-
-- *Claim-bearing wording transcribed verbatim from the reviewed
-  `table5_view6_verdicts.md` draft.*
-- *Verdicts are not computed from data.*
-- *ChatGPT clears the wording before this file is committed in its
-  finalized form.*
-
-The reviewed-text draft was not attached to the build request. The
-table structure below is a skeleton with the rows I can infer from the
-6 items × 3 controls = 18 V6 runs in `data/processed/view6/` plus the
-clean-subset bread run; the **Verdict** and **Evidence** columns must
-be filled by transcription, not computation.
-
-| Item | vs chair | vs window | vs bird | Overall |
+| Item | vs chair | vs window | vs bird | Interpretation under preregistered criteria |
 | --- | --- | --- | --- | --- |
-| water   | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
-| brother | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
-| stone   | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
-| fear    | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
-| dog     | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
-| bread (all 5)         | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
-| bread (clean subset)  | TODO transcribe | TODO transcribe | TODO transcribe | TODO transcribe |
+| water | Pass. Separates 10/10 early-band layers across all N; margins approximately +0.13 to +0.22. | Fragile / fails robustness. Positive at N=100 and N=200, but reverses at N=50. | Pass. Separates 10/10 early-band layers across all N; margins approximately +0.14 to +0.25. | Control-dependent. Water separates from chair and bird but does not survive the strong window control across all N. |
+| brother | Pass. Separates 10/10 early-band layers across all N; margins approximately +0.21 to +0.32. | Fragile. Positive at N=100 and N=200, but near-zero at N=50. | Pass. Separates 10/10 early-band layers across all N; margins approximately +0.22 to +0.36. | Control-dependent, with class-mismatch caveat. Brother separates from chair and bird but is fragile against window; all controls are concrete count nouns and therefore class-mismatched for a relational item. |
+| dog | Pass, weakly. Separates from chair across all N; margins approximately +0.05 to +0.09, or +0.08 to +0.16 with cane removed. | Fail. Window defeats dog across all N. | Pass. Separates across all N; margins approximately +0.06 to +0.13. | Control-dependent. Dog separates from chair and bird but fails against window. |
+| bread | Fail. Clean-subset margins approximately -0.02 to -0.03. | Fail. Clean-subset margins approximately -0.08 to -0.33. | Null / fail. Clean-subset result approximately 0.00. | Failure. Bread does not meet the preregistered concept-specificity criterion under View 6. |
+| stone | Pass. Separates across all N; margins approximately +0.04 to +0.18. | Fail. Window defeats stone across all N. | Pass. Separates across N=50 and N=100, with weaker robustness at N=200; margins approximately +0.05 to +0.22. | Control-dependent. Stone separates from chair and bird but fails against window. |
+| fear | Pass. Separates 10/10 early-band layers across all N; margins approximately +0.08 to +0.18. | Borderline / fragile. Fails at N=50 and is approximately break-even at N=100 and N=200. | Pass. Separates 10/10 early-band layers across all N; margins approximately +0.09 to +0.21. | Control-dependent, with class-mismatch caveat. Fear separates from chair and bird but is borderline against window; all controls are concrete count nouns and therefore class-mismatched for an abstract item. |

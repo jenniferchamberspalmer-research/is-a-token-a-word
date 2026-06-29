@@ -358,6 +358,119 @@ def build_table6() -> None:
     )
 
 
+# -------------------- table 5 — View 6 verdicts (verbatim, cleared) --------------------
+#
+# Carries the verbatim text cleared by the ChatGPT claim pass.
+# Verdicts are not computed from data; they are transcribed exactly.
+# Row order is the order supplied in the cleared draft.
+
+TABLE5_HEADER = ["Item", "vs chair", "vs window", "vs bird",
+                 "Interpretation under preregistered criteria"]
+
+TABLE5_ROWS = [
+    [
+        "water",
+        "Pass. Separates 10/10 early-band layers across all N; margins approximately +0.13 to +0.22.",
+        "Fragile / fails robustness. Positive at N=100 and N=200, but reverses at N=50.",
+        "Pass. Separates 10/10 early-band layers across all N; margins approximately +0.14 to +0.25.",
+        "Control-dependent. Water separates from chair and bird but does not survive the strong window control across all N.",
+    ],
+    [
+        "brother",
+        "Pass. Separates 10/10 early-band layers across all N; margins approximately +0.21 to +0.32.",
+        "Fragile. Positive at N=100 and N=200, but near-zero at N=50.",
+        "Pass. Separates 10/10 early-band layers across all N; margins approximately +0.22 to +0.36.",
+        "Control-dependent, with class-mismatch caveat. Brother separates from chair and bird but is fragile against window; all controls are concrete count nouns and therefore class-mismatched for a relational item.",
+    ],
+    [
+        "dog",
+        "Pass, weakly. Separates from chair across all N; margins approximately +0.05 to +0.09, or +0.08 to +0.16 with cane removed.",
+        "Fail. Window defeats dog across all N.",
+        "Pass. Separates across all N; margins approximately +0.06 to +0.13.",
+        "Control-dependent. Dog separates from chair and bird but fails against window.",
+    ],
+    [
+        "bread",
+        "Fail. Clean-subset margins approximately -0.02 to -0.03.",
+        "Fail. Clean-subset margins approximately -0.08 to -0.33.",
+        "Null / fail. Clean-subset result approximately 0.00.",
+        "Failure. Bread does not meet the preregistered concept-specificity criterion under View 6.",
+    ],
+    [
+        "stone",
+        "Pass. Separates across all N; margins approximately +0.04 to +0.18.",
+        "Fail. Window defeats stone across all N.",
+        "Pass. Separates across N=50 and N=100, with weaker robustness at N=200; margins approximately +0.05 to +0.22.",
+        "Control-dependent. Stone separates from chair and bird but fails against window.",
+    ],
+    [
+        "fear",
+        "Pass. Separates 10/10 early-band layers across all N; margins approximately +0.08 to +0.18.",
+        "Borderline / fragile. Fails at N=50 and is approximately break-even at N=100 and N=200.",
+        "Pass. Separates 10/10 early-band layers across all N; margins approximately +0.09 to +0.21.",
+        "Control-dependent, with class-mismatch caveat. Fear separates from chair and bird but is borderline against window; all controls are concrete count nouns and therefore class-mismatched for an abstract item.",
+    ],
+]
+
+
+def build_table5() -> None:
+    write_csv(OUT_CSV / "table5_view6_verdicts.csv",
+              TABLE5_HEADER, TABLE5_ROWS)
+    write_md(
+        OUT_MD / "table5_view6_verdicts.md",
+        TABLE5_HEADER, TABLE5_ROWS,
+        title="Table 5 — View 6 verdicts",
+        prelude=(
+            "Verdicts transcribed verbatim from the reviewed draft of "
+            "`table5_view6_verdicts.md`. Verdicts are not computed from "
+            "data; the underlying numeric evidence lives in "
+            "`data/processed/view6/`. Cleared by the ChatGPT claim pass."
+        ),
+    )
+
+
+# -------------------- table 7 — interpretive constraints (verbatim) --------------------
+
+TABLE7_HEADER = ["Constraint", "Verbatim table text"]
+
+TABLE7_ROWS = [
+    [
+        "Distributional-vs-differential firewall",
+        "Positive distributional proximity and negative differential value are held categorically separate. Embedding neighborhoods, pairwise ranks, and neighborhood-overlap contrasts are positive-distributional evidence about where tokens sit relative to one another. Even a clean View 6 control separation is distributional concept-specificity, not a direct demonstration of negative-differential value.",
+    ],
+    [
+        "Legibility-by-depth",
+        "The View 5 layer curve is read as legibility-by-depth: the depth at which cross-linguistic equivalence is geometrically present. It is not narrated as meaning forming, semantic consolidation, or convergence toward a shared semantic object.",
+    ],
+    [
+        "Mid-layer cosine anisotropy",
+        "Mid-layer cosine convergence is treated as an anisotropy artifact rather than evidence of distinctive nearness. Because translations, synonyms, and control equivalents all rise toward cosine ≈ 0.99 in the mid layers, View 5 is read on rank rather than cosine.",
+    ],
+    [
+        "Negative-differential reading",
+        "The negative-differential reading remains a theoretical inference rather than a directly tested result in this study. The unfiltered multilingual View 1 pass establishes distributional proximity; the omitted English-only filtered pass is named as the principled next experiment for testing a closed differential opposition set.",
+    ],
+    [
+        "Semantic-hub / gradient reframe",
+        "The semantic-hub or developmental-gradient reframe is cited only as contrast. The present study does not adopt that interpretation, and the multi-item anisotropy evidence removes the strongest empirical reason for reading mid-layer cosine convergence as translation-specific semantic convergence.",
+    ],
+]
+
+
+def build_table7() -> None:
+    write_csv(OUT_CSV / "table7_interpretive_constraints.csv",
+              TABLE7_HEADER, TABLE7_ROWS)
+    write_md(
+        OUT_MD / "table7_interpretive_constraints.md",
+        TABLE7_HEADER, TABLE7_ROWS,
+        title="Table 7 — Interpretive constraints",
+        prelude=(
+            "Constraint statements transcribed verbatim from Methods §4.7 "
+            "/ the run sheet. Cleared by the ChatGPT claim pass."
+        ),
+    )
+
+
 # -------------------- driver --------------------
 
 def main() -> None:
@@ -369,13 +482,12 @@ def main() -> None:
     build_table3()
     print("Table 4 — View 5 summary")
     build_table4()
+    print("Table 5 — View 6 verdicts (verbatim)")
+    build_table5()
     print("Table 6 — homograph screening")
     build_table6()
-    print()
-    print("Tables 1-4, 6 written. Tables 5 (View 6 verdicts) and 7")
-    print("(interpretive constraints) are claim-bearing and held for the")
-    print("ChatGPT claim pass; populate by running")
-    print("paper0/build_tables_claim_text.py with the cleared text.")
+    print("Table 7 — interpretive constraints (verbatim)")
+    build_table7()
 
 
 if __name__ == "__main__":

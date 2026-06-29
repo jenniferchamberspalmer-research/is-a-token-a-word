@@ -1,23 +1,11 @@
 # Table 7 — Interpretive constraints
 
-**DRAFT — PENDING CHATGPT CLAIM PASS. DO NOT CITE.**
+Constraint statements transcribed verbatim from Methods §4.7 / the run sheet. Cleared by the ChatGPT claim pass.
 
-Per the run-sheet rule for this table:
-
-- *Claim-bearing wording transcribed verbatim from Methods §4.7 / run
-  sheet.*
-- *ChatGPT clears the wording before this file is committed in its
-  finalized form.*
-
-The §4.7 / run-sheet text was not attached to the build request. The
-five row keys are fixed; the **Statement** column below carries my
-best-effort drafting from the conversation history and is marked
-clearly as TODO so the verbatim text can replace it after clearance.
-
-| Constraint | Statement |
+| Constraint | Verbatim table text |
 | --- | --- |
-| Distributional-vs-differential firewall | TODO transcribe §4.7 text. Working draft: distributional measurements (cosine, rank, Jaccard) describe what the model carries; they do not adjudicate differential use. Findings here are about representational structure, not meaning-making. |
-| Legibility-by-depth (no gradient narration) | TODO transcribe §4.7 text. Working draft: trajectories across layers describe legibility shifts (what is legible at depth L), not a developmental gradient. The model is not "more competent" at one layer than another; structure is differently legible. |
-| Mid-layer cosine = anisotropy (read on rank) | TODO transcribe §4.7 text. Working draft: mid-network cosines to source rise toward ~1.0 across translation, synonym, and control classes — anisotropy in the residual stream, not semantic convergence. All semantic findings are read on rank in the input-embedding neighborhood, not on residual cosine. |
-| Negative-differential reading = inference, not test | TODO transcribe §4.7 text. Working draft: when translation-vs-control differentials are negative or null, this is read as an inference (anisotropy, homograph contamination, or cutoff-bound) — not as a test result against cross-linguistic structure. |
-| Semantic Hub cited as contrast only | TODO transcribe §4.7 text. Working draft: the Semantic Hub Hypothesis (Wu et al.) and the Platonic Representation Hypothesis (Huh et al.) are cited as the literature room this paper contrasts WITH, not the room it enters. The headline claim is about early-band rank identity, not mid-network alignment. |
+| Distributional-vs-differential firewall | Positive distributional proximity and negative differential value are held categorically separate. Embedding neighborhoods, pairwise ranks, and neighborhood-overlap contrasts are positive-distributional evidence about where tokens sit relative to one another. Even a clean View 6 control separation is distributional concept-specificity, not a direct demonstration of negative-differential value. |
+| Legibility-by-depth | The View 5 layer curve is read as legibility-by-depth: the depth at which cross-linguistic equivalence is geometrically present. It is not narrated as meaning forming, semantic consolidation, or convergence toward a shared semantic object. |
+| Mid-layer cosine anisotropy | Mid-layer cosine convergence is treated as an anisotropy artifact rather than evidence of distinctive nearness. Because translations, synonyms, and control equivalents all rise toward cosine ≈ 0.99 in the mid layers, View 5 is read on rank rather than cosine. |
+| Negative-differential reading | The negative-differential reading remains a theoretical inference rather than a directly tested result in this study. The unfiltered multilingual View 1 pass establishes distributional proximity; the omitted English-only filtered pass is named as the principled next experiment for testing a closed differential opposition set. |
+| Semantic-hub / gradient reframe | The semantic-hub or developmental-gradient reframe is cited only as contrast. The present study does not adopt that interpretation, and the multi-item anisotropy evidence removes the strongest empirical reason for reading mid-layer cosine convergence as translation-specific semantic convergence. |

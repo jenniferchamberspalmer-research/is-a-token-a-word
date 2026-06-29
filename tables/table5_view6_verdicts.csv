@@ -1,8 +1,7 @@
-Item,vs chair,vs window,vs bird,Overall
-water,TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
-brother,TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
-stone,TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
-fear,TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
-dog,TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
-bread (all 5),TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
-bread (clean subset),TODO transcribe,TODO transcribe,TODO transcribe,TODO transcribe
+Item,vs chair,vs window,vs bird,Interpretation under preregistered criteria
+water,Pass. Separates 10/10 early-band layers across all N; margins approximately +0.13 to +0.22.,"Fragile / fails robustness. Positive at N=100 and N=200, but reverses at N=50.",Pass. Separates 10/10 early-band layers across all N; margins approximately +0.14 to +0.25.,Control-dependent. Water separates from chair and bird but does not survive the strong window control across all N.
+brother,Pass. Separates 10/10 early-band layers across all N; margins approximately +0.21 to +0.32.,"Fragile. Positive at N=100 and N=200, but near-zero at N=50.",Pass. Separates 10/10 early-band layers across all N; margins approximately +0.22 to +0.36.,"Control-dependent, with class-mismatch caveat. Brother separates from chair and bird but is fragile against window; all controls are concrete count nouns and therefore class-mismatched for a relational item."
+dog,"Pass, weakly. Separates from chair across all N; margins approximately +0.05 to +0.09, or +0.08 to +0.16 with cane removed.",Fail. Window defeats dog across all N.,Pass. Separates across all N; margins approximately +0.06 to +0.13.,Control-dependent. Dog separates from chair and bird but fails against window.
+bread,Fail. Clean-subset margins approximately -0.02 to -0.03.,Fail. Clean-subset margins approximately -0.08 to -0.33.,Null / fail. Clean-subset result approximately 0.00.,Failure. Bread does not meet the preregistered concept-specificity criterion under View 6.
+stone,Pass. Separates across all N; margins approximately +0.04 to +0.18.,Fail. Window defeats stone across all N.,"Pass. Separates across N=50 and N=100, with weaker robustness at N=200; margins approximately +0.05 to +0.22.",Control-dependent. Stone separates from chair and bird but fails against window.
+fear,Pass. Separates 10/10 early-band layers across all N; margins approximately +0.08 to +0.18.,Borderline / fragile. Fails at N=50 and is approximately break-even at N=100 and N=200.,Pass. Separates 10/10 early-band layers across all N; margins approximately +0.09 to +0.21.,"Control-dependent, with class-mismatch caveat. Fear separates from chair and bird but is borderline against window; all controls are concrete count nouns and therefore class-mismatched for an abstract item."
