@@ -62,11 +62,11 @@ volume = modal.Volume.from_name("water-tool-cache", create_if_missing=True)
 
 
 @app.cls(
-    gpu="T4",
+    gpu="L4",
     timeout=3600,                # per-request execution ceiling
     secrets=[modal.Secret.from_name("huggingface")],
     volumes={"/cache": volume},
-    scaledown_window=1800,       # 30 min warm — survives between session clicks
+    scaledown_window=300,        # 5 min idle on L4 — keeps idle-billing tight
     max_containers=1,            # all requests land on one warm container
 )
 @modal.concurrent(max_inputs=100)
@@ -82,6 +82,12 @@ class WaterPatternServer:
         import os
         os.environ["HF_HOME"] = "/cache/hf"
         os.environ["NEURONPEDIA_CACHE"] = "/cache/neuronpedia"
+        # View 6 OOM mitigation on the larger GPU: tells the CUDA caching
+        # allocator to use expandable segments so fragmentation from per-
+        # layer top-N allocations doesn't refuse a contiguous block. Set
+        # BEFORE load() so it's in effect at first GPU allocation. No
+        # math change — only affects how free GPU memory is partitioned.
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
         print(">>> warmup: loading Gemma 2 2B base (one-time per container) ...")
         from water_tool.core.model import load
