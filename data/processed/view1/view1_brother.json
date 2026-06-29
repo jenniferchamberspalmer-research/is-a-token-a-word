@@ -1,0 +1,102 @@
+[
+  {
+    "rank": 1,
+    "token": "' brother'",
+    "cosine_similarity": 1.0
+  },
+  {
+    "rank": 2,
+    "token": "' Brother'",
+    "cosine_similarity": 0.75
+  },
+  {
+    "rank": 3,
+    "token": "' brothers'",
+    "cosine_similarity": 0.707
+  },
+  {
+    "rank": 4,
+    "token": "' BROTHER'",
+    "cosine_similarity": 0.6914
+  },
+  {
+    "rank": 5,
+    "token": "' sister'",
+    "cosine_similarity": 0.6719
+  },
+  {
+    "rank": 6,
+    "token": "' hermano'",
+    "cosine_similarity": 0.6172
+  },
+  {
+    "rank": 7,
+    "token": "' Brothers'",
+    "cosine_similarity": 0.5547
+  },
+  {
+    "rank": 8,
+    "token": "' sibling'",
+    "cosine_similarity": 0.5391
+  },
+  {
+    "rank": 9,
+    "token": "' \u0431\u0440\u0430\u0442'",
+    "cosine_similarity": 0.5391
+  },
+  {
+    "rank": 10,
+    "token": "' fr\u00e8re'",
+    "cosine_similarity": 0.5273
+  },
+  {
+    "rank": 11,
+    "token": "' sisters'",
+    "cosine_similarity": 0.5117
+  },
+  {
+    "rank": 12,
+    "token": "' \u0628\u0631\u0627\u062f\u0631'",
+    "cosine_similarity": 0.5078
+  },
+  {
+    "rank": 13,
+    "token": "' siblings'",
+    "cosine_similarity": 0.5039
+  },
+  {
+    "rank": 14,
+    "token": "' Sister'",
+    "cosine_similarity": 0.4883
+  },
+  {
+    "rank": 15,
+    "token": "' BROTHERS'",
+    "cosine_similarity": 0.4883
+  },
+  {
+    "rank": 16,
+    "token": "' irm\u00e3o'",
+    "cosine_similarity": 0.4844
+  },
+  {
+    "rank": 17,
+    "token": "' hermanos'",
+    "cosine_similarity": 0.4805
+  },
+  {
+    "rank": 18,
+    "token": "'\u5144\u5f1f'",
+    "cosine_similarity": 0.4766
+  },
+  {
+    "rank": 19,
+    "token": "' fratello'",
+    "cosine_similarity": 0.4727
+  },
+  {
+    "rank": 20,
+    "token": "' cousin'",
+    "cosine_similarity": 0.4648
+  }
+]

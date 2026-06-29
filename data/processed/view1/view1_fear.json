@@ -1,0 +1,102 @@
+[
+  {
+    "rank": 1,
+    "token": "' fear'",
+    "cosine_similarity": 1.0
+  },
+  {
+    "rank": 2,
+    "token": "' Fear'",
+    "cosine_similarity": 0.7812
+  },
+  {
+    "rank": 3,
+    "token": "' FEAR'",
+    "cosine_similarity": 0.7148
+  },
+  {
+    "rank": 4,
+    "token": "' fears'",
+    "cosine_similarity": 0.6836
+  },
+  {
+    "rank": 5,
+    "token": "' feared'",
+    "cosine_similarity": 0.5977
+  },
+  {
+    "rank": 6,
+    "token": "' fearful'",
+    "cosine_similarity": 0.5547
+  },
+  {
+    "rank": 7,
+    "token": "' afraid'",
+    "cosine_similarity": 0.5547
+  },
+  {
+    "rank": 8,
+    "token": "' fearing'",
+    "cosine_similarity": 0.5508
+  },
+  {
+    "rank": 9,
+    "token": "' temor'",
+    "cosine_similarity": 0.5156
+  },
+  {
+    "rank": 10,
+    "token": "' miedo'",
+    "cosine_similarity": 0.5039
+  },
+  {
+    "rank": 11,
+    "token": "' \u0441\u0442\u0440\u0430\u0445'",
+    "cosine_similarity": 0.4844
+  },
+  {
+    "rank": 12,
+    "token": "' Fears'",
+    "cosine_similarity": 0.4629
+  },
+  {
+    "rank": 13,
+    "token": "'\u5bb3\u6015'",
+    "cosine_similarity": 0.4629
+  },
+  {
+    "rank": 14,
+    "token": "'\u6050\u60e7'",
+    "cosine_similarity": 0.4629
+  },
+  {
+    "rank": 15,
+    "token": "' scared'",
+    "cosine_similarity": 0.4453
+  },
+  {
+    "rank": 16,
+    "token": "' worry'",
+    "cosine_similarity": 0.4453
+  },
+  {
+    "rank": 17,
+    "token": "' takut'",
+    "cosine_similarity": 0.4375
+  },
+  {
+    "rank": 18,
+    "token": "' peur'",
+    "cosine_similarity": 0.4297
+  },
+  {
+    "rank": 19,
+    "token": "' paura'",
+    "cosine_similarity": 0.4023
+  },
+  {
+    "rank": 20,
+    "token": "' medo'",
+    "cosine_similarity": 0.3965
+  }
+]

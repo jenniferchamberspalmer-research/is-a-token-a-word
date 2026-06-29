@@ -1,0 +1,102 @@
+[
+  {
+    "rank": 1,
+    "token": "' bread'",
+    "cosine_similarity": 1.0
+  },
+  {
+    "rank": 2,
+    "token": "' Bread'",
+    "cosine_similarity": 0.8203
+  },
+  {
+    "rank": 3,
+    "token": "' BREAD'",
+    "cosine_similarity": 0.7031
+  },
+  {
+    "rank": 4,
+    "token": "' breads'",
+    "cosine_similarity": 0.6484
+  },
+  {
+    "rank": 5,
+    "token": "'\u9eb5\u5305'",
+    "cosine_similarity": 0.4766
+  },
+  {
+    "rank": 6,
+    "token": "' \u0445\u043b\u0435\u0431'",
+    "cosine_similarity": 0.4707
+  },
+  {
+    "rank": 7,
+    "token": "'\u9762\u5305'",
+    "cosine_similarity": 0.4707
+  },
+  {
+    "rank": 8,
+    "token": "' breadcrumbs'",
+    "cosine_similarity": 0.4492
+  },
+  {
+    "rank": 9,
+    "token": "' loaf'",
+    "cosine_similarity": 0.4336
+  },
+  {
+    "rank": 10,
+    "token": "' p\u00e3o'",
+    "cosine_similarity": 0.4277
+  },
+  {
+    "rank": 11,
+    "token": "'\ud83c\udf5e'",
+    "cosine_similarity": 0.4277
+  },
+  {
+    "rank": 12,
+    "token": "' loaves'",
+    "cosine_similarity": 0.4277
+  },
+  {
+    "rank": 13,
+    "token": "' bakery'",
+    "cosine_similarity": 0.4043
+  },
+  {
+    "rank": 14,
+    "token": "' Brot'",
+    "cosine_similarity": 0.3965
+  },
+  {
+    "rank": 15,
+    "token": "' \u0445\u043b\u0435'",
+    "cosine_similarity": 0.3672
+  },
+  {
+    "rank": 16,
+    "token": "'\ud83e\udd56'",
+    "cosine_similarity": 0.3516
+  },
+  {
+    "rank": 17,
+    "token": "' sourdough'",
+    "cosine_similarity": 0.3477
+  },
+  {
+    "rank": 18,
+    "token": "' \u9eb5'",
+    "cosine_similarity": 0.3477
+  },
+  {
+    "rank": 19,
+    "token": "' Bakery'",
+    "cosine_similarity": 0.3418
+  },
+  {
+    "rank": 20,
+    "token": "'\ube75'",
+    "cosine_similarity": 0.3418
+  }
+]

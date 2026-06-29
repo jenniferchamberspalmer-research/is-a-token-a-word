@@ -1,0 +1,102 @@
+[
+  {
+    "rank": 1,
+    "token": "' water'",
+    "cosine_similarity": 1.0
+  },
+  {
+    "rank": 2,
+    "token": "' Water'",
+    "cosine_similarity": 0.832
+  },
+  {
+    "rank": 3,
+    "token": "' WATER'",
+    "cosine_similarity": 0.7539
+  },
+  {
+    "rank": 4,
+    "token": "' agua'",
+    "cosine_similarity": 0.6133
+  },
+  {
+    "rank": 5,
+    "token": "'\u6c34'",
+    "cosine_similarity": 0.6016
+  },
+  {
+    "rank": 6,
+    "token": "' Wasser'",
+    "cosine_similarity": 0.5547
+  },
+  {
+    "rank": 7,
+    "token": "' \u0432\u043e\u0434\u044b'",
+    "cosine_similarity": 0.5156
+  },
+  {
+    "rank": 8,
+    "token": "' waters'",
+    "cosine_similarity": 0.5078
+  },
+  {
+    "rank": 9,
+    "token": "' \u0432\u043e\u0434\u0443'",
+    "cosine_similarity": 0.4961
+  },
+  {
+    "rank": 10,
+    "token": "' \u00e1gua'",
+    "cosine_similarity": 0.4883
+  },
+  {
+    "rank": 11,
+    "token": "' \u0432\u043e\u0434\u0430'",
+    "cosine_similarity": 0.4785
+  },
+  {
+    "rank": 12,
+    "token": "'\u7684\u6c34'",
+    "cosine_similarity": 0.4766
+  },
+  {
+    "rank": 13,
+    "token": "'\u6c34\u7684'",
+    "cosine_similarity": 0.4531
+  },
+  {
+    "rank": 14,
+    "token": "'\u306e\u6c34'",
+    "cosine_similarity": 0.4512
+  },
+  {
+    "rank": 15,
+    "token": "'\u6c34\u306e'",
+    "cosine_similarity": 0.4414
+  },
+  {
+    "rank": 16,
+    "token": "' \u092a\u093e\u0928\u0940'",
+    "cosine_similarity": 0.4395
+  },
+  {
+    "rank": 17,
+    "token": "' \u0627\u0644\u0645\u0627\u0621'",
+    "cosine_similarity": 0.4316
+  },
+  {
+    "rank": 18,
+    "token": "' \u0622\u0628'",
+    "cosine_similarity": 0.4258
+  },
+  {
+    "rank": 19,
+    "token": "'\u6c34\u3092'",
+    "cosine_similarity": 0.4219
+  },
+  {
+    "rank": 20,
+    "token": "'\u30a6\u30a9\u30fc\u30bf\u30fc'",
+    "cosine_similarity": 0.4121
+  }
+]

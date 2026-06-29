@@ -1,0 +1,102 @@
+[
+  {
+    "rank": 1,
+    "token": "' dog'",
+    "cosine_similarity": 1.0
+  },
+  {
+    "rank": 2,
+    "token": "' Dog'",
+    "cosine_similarity": 0.8242
+  },
+  {
+    "rank": 3,
+    "token": "' DOG'",
+    "cosine_similarity": 0.7344
+  },
+  {
+    "rank": 4,
+    "token": "' dogs'",
+    "cosine_similarity": 0.7188
+  },
+  {
+    "rank": 5,
+    "token": "' Dogs'",
+    "cosine_similarity": 0.6289
+  },
+  {
+    "rank": 6,
+    "token": "'\u72d7'",
+    "cosine_similarity": 0.5469
+  },
+  {
+    "rank": 7,
+    "token": "' DOGS'",
+    "cosine_similarity": 0.5195
+  },
+  {
+    "rank": 8,
+    "token": "'\u72ac'",
+    "cosine_similarity": 0.5078
+  },
+  {
+    "rank": 9,
+    "token": "' canine'",
+    "cosine_similarity": 0.4941
+  },
+  {
+    "rank": 10,
+    "token": "' \u0441\u043e\u0431\u0430'",
+    "cosine_similarity": 0.4688
+  },
+  {
+    "rank": 11,
+    "token": "' perros'",
+    "cosine_similarity": 0.4688
+  },
+  {
+    "rank": 12,
+    "token": "' doggy'",
+    "cosine_similarity": 0.4395
+  },
+  {
+    "rank": 13,
+    "token": "'\u72d7\u72d7'",
+    "cosine_similarity": 0.4258
+  },
+  {
+    "rank": 14,
+    "token": "' pet'",
+    "cosine_similarity": 0.4238
+  },
+  {
+    "rank": 15,
+    "token": "' \u0441\u043e\u0431\u0430\u043a\u0438'",
+    "cosine_similarity": 0.418
+  },
+  {
+    "rank": 16,
+    "token": "' perro'",
+    "cosine_similarity": 0.4121
+  },
+  {
+    "rank": 17,
+    "token": "' Canine'",
+    "cosine_similarity": 0.4121
+  },
+  {
+    "rank": 18,
+    "token": "' chien'",
+    "cosine_similarity": 0.4082
+  },
+  {
+    "rank": 19,
+    "token": "' \u0441\u043e\u0431\u0430\u043a\u0430'",
+    "cosine_similarity": 0.4043
+  },
+  {
+    "rank": 20,
+    "token": "' puppy'",
+    "cosine_similarity": 0.3945
+  }
+]

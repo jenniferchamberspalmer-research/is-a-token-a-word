@@ -1,0 +1,102 @@
+[
+  {
+    "rank": 1,
+    "token": "' stone'",
+    "cosine_similarity": 0.9961
+  },
+  {
+    "rank": 2,
+    "token": "' Stone'",
+    "cosine_similarity": 0.7852
+  },
+  {
+    "rank": 3,
+    "token": "' STONE'",
+    "cosine_similarity": 0.7734
+  },
+  {
+    "rank": 4,
+    "token": "' stones'",
+    "cosine_similarity": 0.7031
+  },
+  {
+    "rank": 5,
+    "token": "' Stones'",
+    "cosine_similarity": 0.5664
+  },
+  {
+    "rank": 6,
+    "token": "' piedra'",
+    "cosine_similarity": 0.5547
+  },
+  {
+    "rank": 7,
+    "token": "'\u77f3'",
+    "cosine_similarity": 0.5234
+  },
+  {
+    "rank": 8,
+    "token": "' \u043a\u0430\u043c\u0435\u043d\u044c'",
+    "cosine_similarity": 0.5039
+  },
+  {
+    "rank": 9,
+    "token": "' pedra'",
+    "cosine_similarity": 0.4922
+  },
+  {
+    "rank": 10,
+    "token": "'\u30b9\u30c8\u30fc\u30f3'",
+    "cosine_similarity": 0.4785
+  },
+  {
+    "rank": 11,
+    "token": "' \u043a\u0430\u043c\u043d\u044f'",
+    "cosine_similarity": 0.4766
+  },
+  {
+    "rank": 12,
+    "token": "'\u77f3\u5934'",
+    "cosine_similarity": 0.4648
+  },
+  {
+    "rank": 13,
+    "token": "' \u043a\u0430\u043c\u0435\u043d'",
+    "cosine_similarity": 0.4414
+  },
+  {
+    "rank": 14,
+    "token": "' pierre'",
+    "cosine_similarity": 0.4277
+  },
+  {
+    "rank": 15,
+    "token": "' ston'",
+    "cosine_similarity": 0.4121
+  },
+  {
+    "rank": 16,
+    "token": "' stoned'",
+    "cosine_similarity": 0.4102
+  },
+  {
+    "rank": 17,
+    "token": "' pietra'",
+    "cosine_similarity": 0.4102
+  },
+  {
+    "rank": 18,
+    "token": "' stony'",
+    "cosine_similarity": 0.4102
+  },
+  {
+    "rank": 19,
+    "token": "' piedras'",
+    "cosine_similarity": 0.4023
+  },
+  {
+    "rank": 20,
+    "token": "' rock'",
+    "cosine_similarity": 0.3984
+  }
+]
