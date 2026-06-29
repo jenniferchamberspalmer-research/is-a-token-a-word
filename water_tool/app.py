@@ -22,6 +22,7 @@ import pandas as pd
 from .views import embedding, probability, features as features_view
 from .views import interference as interference_view
 from .views import trajectory as trajectory_view
+from .views import neighborhood as neighborhood_view
 from .core.export import to_csv, to_json
 
 
@@ -136,7 +137,7 @@ INTRO = """
 # Water Pattern Tool
 
 An instrument for surfacing the statistical pattern that Gemma 2 2B
-(base, not instruction-tuned) carries about a word, across five layers
+(base, not instruction-tuned) carries about a word, across six layers
 of analysis:
 
   - **View 1** — Embedding neighborhood. The static, dictionary-like layer.
@@ -144,6 +145,7 @@ of analysis:
   - **View 3** — Sparse-autoencoder feature activation. The internal-organization layer.
   - **View 4** — Superposition interference (β critical exponent).
   - **View 5** — Cross-linguistic trajectory (unit instrument).
+  - **View 6** — Relational neighborhood dynamics (extension of View 5).
 
 The model and SAEs load once per container at startup. If you see a
 progress bar that runs for ~30 seconds on the very first click after
@@ -437,6 +439,77 @@ def build():
                     v5_ctl_source, v5_ctl_equivs,
                 ],
                 outputs=[v5_out, v5_status, v5_plot, v5_json],
+                show_progress="full",
+            )
+
+        # ----- View 6: Relational neighborhood dynamics -----
+        with gr.Tab("View 6: Neighborhood dynamics"):
+            gr.Markdown(
+                "**Extension of View 5.** Same neighbor space "
+                "(`resid_L @ embed_table.T`) and same pooling. Test "
+                "whether early-layer cross-linguistic identity is a "
+                "full *neighborhood-level* structure, not just pairwise "
+                "closeness.\n\n"
+                "Per layer L and per word, take top-200 vocab "
+                "neighbors. For each (source, comparison) pair at each "
+                "N ∈ {50, 100, 200} compute **Jaccard overlap**, "
+                "**reciprocal-rank-weighted overlap** (source-anchored), "
+                "**mean rank of shared neighbors**, and **count of "
+                "shared neighbors**. N=100 is the headline; N=50/200 "
+                "are robustness checks only.\n\n"
+                "Four plots: Jaccard per pair (N=100), reciprocal-rank-"
+                "weighted per pair (N=100), translation mean vs control "
+                "mean (the disconfirm test), and N=50/100/200 overlay "
+                "(cutoff robustness)."
+            )
+            with gr.Row():
+                with gr.Column(scale=2):
+                    v6_source = gr.Textbox(
+                        label="Source word",
+                        value=neighborhood_view.DEFAULT_SOURCE,
+                    )
+                    v6_equivalents = gr.Textbox(
+                        label="Cross-linguistic equivalents "
+                              "('lang: word', one per line)",
+                        value=neighborhood_view.DEFAULT_EQUIVALENTS,
+                        lines=6,
+                    )
+                    v6_synonyms = gr.Textbox(
+                        label="Within-language synonyms (comma-separated)",
+                        value=neighborhood_view.DEFAULT_SYNONYMS,
+                    )
+                    v6_ctl_source = gr.Textbox(
+                        label="Control source word "
+                              "(leave blank to skip control)",
+                        value=neighborhood_view.DEFAULT_CONTROL_SOURCE,
+                    )
+                    v6_ctl_equivs = gr.Textbox(
+                        label="Control equivalents "
+                              "('lang: word', one per line)",
+                        value=neighborhood_view.DEFAULT_CONTROL_EQUIVALENTS,
+                        lines=6,
+                    )
+                    v6_btn = gr.Button("Run", variant="primary")
+                with gr.Column(scale=3):
+                    v6_status = gr.Markdown()
+                    v6_plot = gr.Image(
+                        label="Plots 1–4 (Jaccard, RR-weighted, disconfirm, "
+                              "cutoff sensitivity)",
+                        type="filepath",
+                    )
+                    v6_out = gr.Dataframe(
+                        label="Per-layer headline summary "
+                              "(N=100 Jaccard, RR-weighted, count_shared)",
+                        wrap=True,
+                    )
+                    v6_json = gr.File(label="Download JSON (full data)")
+            v6_btn.click(
+                neighborhood_view.run_neighborhood,
+                inputs=[
+                    v6_source, v6_equivalents, v6_synonyms,
+                    v6_ctl_source, v6_ctl_equivs,
+                ],
+                outputs=[v6_out, v6_status, v6_plot, v6_json],
                 show_progress="full",
             )
 
