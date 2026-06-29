@@ -271,6 +271,16 @@ def run_interference(concept_text: str, layer, pooling: str,
         cr = res_real["cross"]
         ir = res_real["internal"]
 
+        # shuffle_control has three distinct states (preserved by the
+        # explicit `status` field — never silently null when the
+        # checkbox was on):
+        #   - None                 : checkbox off, shuffle not requested
+        #   - status="computed"    : shuffle ran and produced stats
+        #   - status="selection_eliminated"
+        #                          : shuffle ran but selection collapsed
+        #                            below min_languages — the strongest
+        #                            control outcome, but indistinguishable
+        #                            from "didn't run" if we returned null
         headline_shuf = None
         shuf_info = None
         shuf_xling_n = None
@@ -288,6 +298,10 @@ def run_interference(concept_text: str, layer, pooling: str,
                 seed=42,
             )
             shuf_xling_n = int(len(xling_shuf))
+            min_required = int(shuf_sel.get(
+                "min_languages",
+                len(acts) if min_languages in (None, "", 0, "all", "All")
+                else int(min_languages)))
             if res_shuf is not None:
                 crs = res_shuf["cross"]
                 headline_shuf = (crs["beta"]
@@ -295,16 +309,29 @@ def run_interference(concept_text: str, layer, pooling: str,
                                     if crs["null_matched_mean"] is not None
                                     else crs["null_unif_mean"]))
                 shuf_info = dict(
+                    status="computed",
+                    shuffle_actual_k=shuf_xling_n,
+                    min_required=min_required,
                     cross_beta=float(crs["beta"]),
                     null_matched_mean=(
                         float(crs["null_matched_mean"])
                         if crs["null_matched_mean"] is not None else None
                     ),
                     null_uniform_mean=float(crs["null_unif_mean"]),
+                    headline_matched=float(headline_shuf),
                     headline_significant=bool(crs["headline_significant"]),
                     headline_ci_lo=float(crs["headline_ci_lo"]),
                     headline_ci_hi=float(crs["headline_ci_hi"]),
+                    # Legacy alias kept for any downstream readers:
                     actual_k=shuf_xling_n,
+                )
+            else:
+                # Selection collapsed under shuffle — this IS the result,
+                # not a missing run.
+                shuf_info = dict(
+                    status="selection_eliminated",
+                    shuffle_actual_k=shuf_xling_n,
+                    min_required=min_required,
                 )
 
         progress(0.95, desc="writing summary")
@@ -354,19 +381,30 @@ def run_interference(concept_text: str, layer, pooling: str,
             ("cosine_sig2_mean",
                 round(cr["cosine_stats"]["summary"]["sig2_mean"], 5)),
         ]
-        if compute_shuffle:
-            if shuf_info is not None and headline_shuf is not None:
+        if compute_shuffle and shuf_info is not None:
+            if shuf_info["status"] == "computed":
                 rows.append((
                     "HEADLINE_shuffled (control; should be ~0)",
                     round(headline_shuf, 4),
                 ))
                 rows.append((
-                    "shuffled_significant", shuf_info["headline_significant"]))
-                rows.append(("shuffled_selected_n", shuf_xling_n))
-            else:
+                    "shuffled_significant",
+                    shuf_info["headline_significant"]))
+                rows.append((
+                    "shuffle_actual_k", shuf_info["shuffle_actual_k"]))
+                rows.append((
+                    "shuffle_status", "computed"))
+            else:  # "selection_eliminated"
                 rows.append((
                     "HEADLINE_shuffled (control)",
-                    f"insufficient (k={shuf_xling_n})"))
+                    f"selection_eliminated "
+                    f"(k={shuf_info['shuffle_actual_k']} < "
+                    f"min_languages={shuf_info['min_required']})",
+                ))
+                rows.append((
+                    "shuffle_actual_k", shuf_info["shuffle_actual_k"]))
+                rows.append((
+                    "shuffle_status", "selection_eliminated"))
 
         df = pd.DataFrame(rows, columns=["metric", "value"])
 
@@ -381,21 +419,23 @@ def run_interference(concept_text: str, layer, pooling: str,
             f"**{'significant' if cr['headline_significant'] else 'NOT significant'}**",
             f"(uniform-null contrast: `{headline_uniform:+.4f}`)",
         ]
-        if compute_shuffle:
-            if headline_shuf is not None:
+        if compute_shuffle and shuf_info is not None:
+            if shuf_info["status"] == "computed":
                 status_lines.append(
-                    f"**Shuffle control headline** = `{headline_shuf:+.4f}` "
-                    f"(should be near 0 if the real headline reflects "
-                    f"genuine cross-linguistic geometry)"
+                    f"**Shuffle control headline** = "
+                    f"`{headline_shuf:+.4f}` "
+                    f"(shuffle_actual_k = {shuf_info['shuffle_actual_k']}; "
+                    f"target ≈ 0 if the real headline reflects genuine "
+                    f"cross-linguistic geometry)"
                 )
-            else:
+            else:  # "selection_eliminated"
                 status_lines.append(
-                    f"**Shuffle control: selection eliminated** "
-                    f"(k={shuf_xling_n}). Under permuted language "
-                    f"assignment the selector finds no cluster — the "
-                    f"strongest possible control. The cross-linguistic "
-                    f"structure is necessary for the cluster to exist; "
-                    f"there is nothing left to spuriously match."
+                    f"**Shuffle control: under permuted language "
+                    f"assignment the selector finds no cluster** "
+                    f"(k={shuf_info['shuffle_actual_k']} < min_languages = "
+                    f"{shuf_info['min_required']}). Cross-linguistic "
+                    f"structure is necessary for the cluster to exist — "
+                    f"the strongest control outcome."
                 )
         if cr["widening_rate"] is not None and cr["widening_rate"] > 0.05:
             status_lines.append(
