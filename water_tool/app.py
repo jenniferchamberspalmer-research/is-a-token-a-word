@@ -21,6 +21,7 @@ import pandas as pd
 
 from .views import embedding, probability, features as features_view
 from .views import interference as interference_view
+from .views import trajectory as trajectory_view
 from .core.export import to_csv, to_json
 
 
@@ -135,13 +136,14 @@ INTRO = """
 # Water Pattern Tool
 
 An instrument for surfacing the statistical pattern that Gemma 2 2B
-(base, not instruction-tuned) carries about a word, across four layers
+(base, not instruction-tuned) carries about a word, across five layers
 of analysis:
 
   - **View 1** — Embedding neighborhood. The static, dictionary-like layer.
   - **View 2** — Contextual next-token probability. The contextual layer.
   - **View 3** — Sparse-autoencoder feature activation. The internal-organization layer.
   - **View 4** — Superposition interference (β critical exponent).
+  - **View 5** — Cross-linguistic trajectory (unit instrument).
 
 The model and SAEs load once per container at startup. If you see a
 progress bar that runs for ~30 seconds on the very first click after
@@ -367,6 +369,74 @@ def build():
                     v4_shuffle,
                 ],
                 outputs=[v4_out, v4_status, v4_json],
+                show_progress="full",
+            )
+
+        # ----- View 5: Cross-linguistic trajectory (UNIT instrument) -----
+        with gr.Tab("View 5: Trajectory"):
+            gr.Markdown(
+                "**Unit instrument**: one source word, traced through "
+                "every layer 0..n. No aggregation, no selection, no β, "
+                "no shuffle. At each layer: the source's last-token "
+                "residual is compared (by cosine) to each comparison "
+                "word's last-token residual at the same layer; the "
+                "rank of each comparison word's last-token id in the "
+                "source's vocab-cosine neighborhood is also recorded.\n\n"
+                "Three comparison classes:\n"
+                "  - **translations** — cross-linguistic equivalents of "
+                "the source\n"
+                "  - **synonyms** — within-language near-synonyms "
+                "(comma-separated)\n"
+                "  - **control** — a separate source word + its own "
+                "translations, traced identically. Cosines and ranks "
+                "for the control class are computed against the "
+                "CONTROL source's residual — a self-contained second "
+                "trajectory for comparison."
+            )
+            with gr.Row():
+                with gr.Column(scale=2):
+                    v5_source = gr.Textbox(
+                        label="Source word",
+                        value=trajectory_view.DEFAULT_SOURCE,
+                    )
+                    v5_equivalents = gr.Textbox(
+                        label="Cross-linguistic equivalents "
+                              "('lang: word', one per line)",
+                        value=trajectory_view.DEFAULT_EQUIVALENTS,
+                        lines=6,
+                    )
+                    v5_synonyms = gr.Textbox(
+                        label="Within-language synonyms (comma-separated)",
+                        value=trajectory_view.DEFAULT_SYNONYMS,
+                    )
+                    v5_ctl_source = gr.Textbox(
+                        label="Control source word "
+                              "(leave blank to skip control)",
+                        value=trajectory_view.DEFAULT_CONTROL_SOURCE,
+                    )
+                    v5_ctl_equivs = gr.Textbox(
+                        label="Control equivalents "
+                              "('lang: word', one per line)",
+                        value=trajectory_view.DEFAULT_CONTROL_EQUIVALENTS,
+                        lines=6,
+                    )
+                    v5_btn = gr.Button("Run", variant="primary")
+                with gr.Column(scale=3):
+                    v5_status = gr.Markdown()
+                    v5_plot = gr.Image(label="Trajectory (cosine + rank)",
+                                       type="filepath")
+                    v5_out = gr.Dataframe(
+                        label="Per-layer table (cosine + rank per word)",
+                        wrap=True,
+                    )
+                    v5_json = gr.File(label="Download JSON")
+            v5_btn.click(
+                trajectory_view.run_trajectory,
+                inputs=[
+                    v5_source, v5_equivalents, v5_synonyms,
+                    v5_ctl_source, v5_ctl_equivs,
+                ],
+                outputs=[v5_out, v5_status, v5_plot, v5_json],
                 show_progress="full",
             )
 

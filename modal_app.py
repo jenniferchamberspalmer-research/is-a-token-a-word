@@ -49,6 +49,7 @@ image = (
         "pandas>=2.0",
         "numpy>=1.26",
         "scipy>=1.11",
+        "matplotlib>=3.7",   # View 5 trajectory plot
         "requests>=2.31",
         "fastapi==0.112.2",
         "starlette==0.38.6",
