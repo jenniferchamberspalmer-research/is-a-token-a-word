@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What do you want to know about me today? — Jennifer Chambers Palmer</title>
+<meta name="description" content="An interactive, branching introduction to Jennifer Chambers Palmer, built the way she builds learning experiences.">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --bg-warm: #F3EDE6;
+    --bg-card: #FFFDF9;
+    --text: #2C2420;
+    --text-secondary: #6B5D52;
+    --text-light: #9B8E82;
+    --accent: #8B4513;
+    --accent-light: #B8860B;
+    --accent-deep: #5C2E0E;
+    --border: #D8CDBE;
+    --border-light: #E8DED2;
+    --highlight: #FFF8E7;
+    --mono-bg: #2C2420;
+    --mono-text: #E8DED2;
+    --success: #4A7C59;
+    --link: #6B4423;
+    --note: #7c5cbf;
+    --note-bg: #f5f1fb;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 19px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--link); }
+
+  .sans { font-family: 'DM Sans', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(250,248,245,.94);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border-light);
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  .topbar .name { font-weight: 700; letter-spacing: .4px; color: var(--accent-deep); cursor: pointer; }
+  .topbar .spacer { flex: 1; }
+  .topbtn {
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary);
+    border-radius: 20px; padding: 5px 14px; cursor: pointer; transition: all .15s;
+  }
+  .topbtn:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .topbtn.on { background: var(--note-bg); border-color: var(--note); color: var(--note); }
+
+  /* ---------- stage ---------- */
+  .stage { max-width: 760px; margin: 0 auto; padding: 48px 24px 140px; }
+
+  .kicker {
+    font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 18px;
+  }
+  h1 { font-weight: 300; font-size: 40px; line-height: 1.15; letter-spacing: -.5px; margin-bottom: 14px; }
+  h2 { font-weight: 400; font-size: 30px; line-height: 1.2; margin: 0 0 14px; }
+  h3 { font-weight: 600; font-size: 21px; margin: 30px 0 8px; }
+  .lede { font-size: 22px; font-weight: 300; font-style: italic; color: var(--text-secondary); margin-bottom: 28px; line-height: 1.5; }
+  p { margin-bottom: 16px; }
+  em { font-style: italic; }
+  .quiet { color: var(--text-light); font-size: 16px; }
+
+  /* ---------- choice cards ---------- */
+  .choices { display: grid; gap: 14px; margin: 26px 0; }
+  .choice {
+    text-align: left; width: 100%;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; cursor: pointer;
+    font-family: 'Crimson Pro', Georgia, serif; font-size: 19px; color: var(--text);
+    transition: all .15s; position: relative;
+  }
+  .choice:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(92,46,14,.08); transform: translateY(-1px); }
+  .choice .c-title { font-weight: 600; font-size: 20px; display: block; margin-bottom: 4px; color: var(--accent-deep); }
+  .choice .c-sub { font-size: 16px; color: var(--text-secondary); display: block; }
+  .choice .c-done { position: absolute; top: 14px; right: 16px; font-size: 15px; }
+  .choice.picked { border-color: var(--accent-light); background: var(--highlight); }
+  .choice:disabled { cursor: default; opacity: .75; }
+
+  .btnrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 8px; }
+  .btn {
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    background: var(--accent-deep); color: #fff; border: none; border-radius: 24px;
+    padding: 10px 22px; cursor: pointer; transition: all .15s;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn.ghost { background: transparent; color: var(--accent-deep); border: 1px solid var(--border); }
+  .btn.ghost:hover { border-color: var(--accent); }
+
+  /* ---------- emphasis / evidence blocks ---------- */
+  .block {
+    background: var(--highlight); border-left: 3px solid var(--accent-light);
+    padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 22px 0; font-size: 18px;
+  }
+  .evidence {
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: 10px; padding: 16px 20px; margin: 22px 0; font-size: 17px;
+  }
+  .evidence .ev-label {
+    font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--success); margin-bottom: 6px;
+  }
+
+  /* ---------- design notes (pedagogy layer) ---------- */
+  .dnote {
+    display: none;
+    background: var(--note-bg); border: 1px dashed var(--note); border-radius: 10px;
+    padding: 14px 18px; margin: 22px 0; font-size: 16px; color: #4a3a72;
+  }
+  body.notes-on .dnote { display: block; }
+  .dnote .dn-label {
+    font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--note); margin-bottom: 6px;
+  }
+  .psaed-tag {
+    display: inline-block; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
+    background: var(--note); color: #fff; border-radius: 4px; padding: 1px 7px; margin-right: 6px;
+  }
+
+  /* ---------- interview chip ---------- */
+  .ichip { margin: 24px 0; }
+  .ichip > button {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    background: var(--bg-warm); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; cursor: pointer;
+    transition: all .15s;
+  }
+  .ichip > button:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .ichip .ic-body {
+    display: none; margin-top: 10px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; font-size: 17px;
+  }
+  .ichip.open .ic-body { display: block; }
+  .ichip .ic-q { font-weight: 600; color: var(--accent-deep); margin-bottom: 8px; }
+
+  /* ---------- checkpoint ---------- */
+  .checkpoint {
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 34px 0;
+    background: var(--bg-card);
+  }
+  .checkpoint .cp-head {
+    background: var(--bg-warm); padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--accent);
+  }
+  .checkpoint .cp-body { padding: 18px 20px; }
+  .cp-feedback { display: none; margin-top: 14px; padding: 14px 16px; background: var(--highlight); border-radius: 8px; font-size: 17px; }
+  .cp-feedback.show { display: block; }
+  .cp-feedback .cp-emoji { font-size: 22px; margin-right: 6px; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+  .tab {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+    border-radius: 8px 8px 0 0; border-bottom: none; padding: 8px 16px; cursor: pointer;
+  }
+  .tab.on { background: var(--highlight); color: var(--accent-deep); border-color: var(--accent-light); }
+  .tabpane {
+    border: 1px solid var(--border); border-radius: 0 10px 10px 10px;
+    background: var(--bg-card); padding: 20px 22px; font-size: 17.5px;
+  }
+  .tabpane .tp-meta { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-light); margin-bottom: 10px; }
+
+  /* ---------- pipeline ---------- */
+  .pipeline { display: flex; flex-wrap: wrap; gap: 6px; margin: 24px 0 14px; align-items: stretch; }
+  .pstage {
+    flex: 1 1 120px; min-width: 110px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 8px; text-align: center; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+    transition: all .15s;
+  }
+  .pstage:hover, .pstage.on { border-color: var(--accent); background: var(--highlight); color: var(--accent-deep); }
+  .pstage .p-num { display: block; font-size: 10px; letter-spacing: 1.5px; color: var(--accent-light); margin-bottom: 2px; }
+  .pdetail { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; font-size: 17px; }
+  .pdetail .pd-row { margin-bottom: 8px; }
+  .pdetail .pd-k { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); display: block; }
+
+  /* ---------- social depth ---------- */
+  .depth-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 24px 0; }
+  .depth-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px; cursor: pointer; text-align: center; transition: all .15s;
+  }
+  .depth-card:hover, .depth-card.on { border-color: var(--accent); box-shadow: 0 2px 10px rgba(92,46,14,.08); }
+  .depth-card .d-emoji { font-size: 30px; display: block; margin-bottom: 6px; }
+  .depth-card .d-name { font-weight: 600; font-size: 19px; color: var(--accent-deep); }
+  .depth-card .d-sub { font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-light); display: block; margin-top: 4px; }
+  .depth-answer { display: none; }
+  .depth-answer.show { display: block; }
+  .tier-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-light);
+    border-bottom: 1px solid var(--border-light); padding-bottom: 8px; margin-bottom: 14px;
+  }
+
+  /* ---------- pair-share dialogue ---------- */
+  .dialogue { margin: 18px 0; }
+  .bubble { border-radius: 12px; padding: 12px 16px; margin: 10px 0; font-size: 17.5px; max-width: 92%; }
+  .bubble.them { background: var(--bg-warm); border: 1px solid var(--border-light); }
+  .bubble.me { background: var(--highlight); border: 1px solid var(--border-light); margin-left: 8%; }
+  .bubble .b-who { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-light); display: block; margin-bottom: 4px; }
+
+  /* ---------- rubric widget ---------- */
+  .rubric-fab {
+    position: fixed; right: 18px; bottom: 18px; z-index: 60;
+    background: var(--accent-deep); color: #fff; border: none; border-radius: 30px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 12px 18px; cursor: pointer; box-shadow: 0 4px 16px rgba(44,36,32,.25);
+  }
+  .rubric-panel {
+    position: fixed; right: 18px; bottom: 70px; z-index: 60; width: 330px; max-width: calc(100vw - 36px);
+    max-height: 70vh; overflow-y: auto;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 10px 34px rgba(44,36,32,.22); padding: 18px 20px; display: none;
+  }
+  .rubric-panel.open { display: block; }
+  .rubric-panel h4 { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .rubric-panel .r-sub { font-size: 14px; color: var(--text-light); margin-bottom: 12px; line-height: 1.4; }
+  .r-dim { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-light); font-size: 16px; }
+  .r-dim .r-emoji { font-size: 17px; white-space: nowrap; flex: none; }
+  .r-dim .r-name { line-height: 1.25; }
+  .r-dim .r-hint { display: block; font-family: 'DM Sans', sans-serif; font-size: 11.5px; color: var(--text-light); }
+  .r-log-title { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin: 14px 0 6px; }
+  .r-log { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-secondary); line-height: 1.7; }
+  .r-log div { border-bottom: 1px dotted var(--border-light); padding: 2px 0; }
+
+  /* ---------- progress map on hub ---------- */
+  .map-row { display: flex; align-items: center; gap: 10px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text-secondary); margin: 4px 0; }
+  .map-row .m-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border); flex: none; }
+  .map-row.done .m-dot { background: var(--success); }
+  .map-row.done { color: var(--text); }
+
+  .footer-note {
+    max-width: 760px; margin: 0 auto; padding: 30px 24px 60px;
+    font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: var(--text-light);
+    border-top: 1px solid var(--border-light); line-height: 1.7;
+  }
+
+  .fade-in { animation: fadein .35s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 640px) {
+    body { font-size: 17.5px; }
+    h1 { font-size: 31px; }
+    h2 { font-size: 25px; }
+    .lede { font-size: 19px; }
+    .stage { padding: 32px 18px 140px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="name" onclick="go('hub')">Jennifer Chambers Palmer</span>
+  <span class="spacer"></span>
+  <button class="topbtn" id="hubBtn" onclick="go('hub')">↩ Start</button>
+  <button class="topbtn" id="notesBtn" onclick="toggleNotes()">Show the pedagogy</button>
+</div>
+
+<main class="stage" id="stage"></main>
+
+<button class="rubric-fab" id="rubricFab" onclick="toggleRubric()">📋 What you know so far</button>
+<div class="rubric-panel" id="rubricPanel"></div>
+
+<div class="footer-note">
+  Everything on this page is my own public work, my own technical builds, or my own accurately-described practice.
+  Nothing reproduces proprietary or behind-paywall content from CTU, the University System of Georgia, or the eCore/eMajor collaboratives.
+  This is a static page: every interaction here runs in your browser, no API calls, and nothing you click is sent anywhere.
+  &nbsp;·&nbsp; The research paper that shares this repository: <a href="../index.html">Is a Token a Word?</a>
+</div>
+
+<script>
+/* =========================================================
+   State — visitor progress, rubric scores, formative log
+   ========================================================= */
+var S = { visited: {}, scores: { values: 0, tech: 0, lead: 0, cx: 0 }, log: [], flags: {} };
+try {
+  var saved = localStorage.getItem('jcp-hello');
+  if (saved) S = JSON.parse(saved);
+} catch (e) {}
+
+function save() { try { localStorage.setItem('jcp-hello', JSON.stringify(S)); } catch (e) {} }
+
+var DIMS = {
+  values: { name: 'Her values', hint: 'what she cares about' },
+  tech:   { name: 'Technical depth', hint: 'hands-on work with models' },
+  lead:   { name: 'Leadership', hint: 'developing people, setting the bar' },
+  cx:     { name: 'Navigating complexity', hint: 'scale, ambiguity, shifting ground' }
+};
+
+function level(pts) {
+  if (pts >= 5) return '🌳 established';
+  if (pts >= 3) return '🌿 developing';
+  if (pts >= 1) return '🌱 emerging';
+  return '⚪ not yet observed';
+}
+
+function award(dim, pts, why) {
+  S.scores[dim] = (S.scores[dim] || 0) + pts;
+  S.log.push({ t: why, d: DIMS[dim].name, p: pts });
+  save();
+  renderRubric();
+  var fab = document.getElementById('rubricFab');
+  fab.style.transform = 'scale(1.06)';
+  setTimeout(function () { fab.style.transform = ''; }, 200);
+}
+
+function renderRubric() {
+  var p = document.getElementById('rubricPanel');
+  var html = '<h4>Formative assessment — of you</h4>' +
+    '<div class="r-sub">A light rubric tracking what you’ve had the chance to learn about Jennifer so far. No wrong answers were possible; this measures exposure and engagement, not judgment.</div>';
+  for (var k in DIMS) {
+    html += '<div class="r-dim"><span class="r-name">' + DIMS[k].name + '<span class="r-hint">' + DIMS[k].hint + '</span></span>' +
+      '<span class="r-emoji">' + level(S.scores[k] || 0) + '</span></div>';
+  }
+  html += '<div class="r-log-title">Your formative data (' + S.log.length + ' events)</div><div class="r-log">';
+  if (!S.log.length) html += '<div>No events yet — make a choice somewhere.</div>';
+  for (var i = S.log.length - 1; i >= 0 && i > S.log.length - 9; i--) {
+    html += '<div>+' + S.log[i].p + ' ' + S.log[i].d + ' — ' + S.log[i].t + '</div>';
+  }
+  html += '</div>';
+  p.innerHTML = html;
+}
+
+function toggleRubric() {
+  document.getElementById('rubricPanel').classList.toggle('open');
+  renderRubric();
+}
+
+function toggleNotes() {
+  document.body.classList.toggle('notes-on');
+  var on = document.body.classList.contains('notes-on');
+  document.getElementById('notesBtn').textContent = on ? 'Hide the pedagogy' : 'Show the pedagogy';
+  document.getElementById('notesBtn').classList.toggle('on', on);
+  if (on && !S.flags.notesUsed) { S.flags.notesUsed = true; award('cx', 1, 'opened the design-notes layer'); }
+}
+
+/* =========================================================
+   Small builders
+   ========================================================= */
+function dnote(psaed, text) {
+  return '<div class="dnote"><div class="dn-label">Design note — why this station is built this way</div>' +
+    '<span class="psaed-tag">' + psaed + '</span>' + text + '</div>';
+}
+
+function ichip(id, q, a) {
+  return '<div class="ichip" id="ic-' + id + '"><button onclick="openChip(\'' + id + '\')">💬 A hiring panel might ask…</button>' +
+    '<div class="ic-body"><div class="ic-q">“' + q + '”</div>' + a + '</div></div>';
+}
+
+function openChip(id) {
+  var el = document.getElementById('ic-' + id);
+  el.classList.toggle('open');
+  if (!S.flags['chip-' + id]) { S.flags['chip-' + id] = true; save(); }
+}
+
+function checkpoint(id, question, options) {
+  var html = '<div class="checkpoint" id="cp-' + id + '"><div class="cp-head">Formative checkpoint · 20 seconds, no wrong answers</div><div class="cp-body">' +
+    '<p style="margin-bottom:14px"><strong>' + question + '</strong></p><div class="choices">';
+  options.forEach(function (o, i) {
+    html += '<button class="choice" onclick="answerCp(\'' + id + '\',' + i + ')"><span class="c-title" style="font-size:18px">' + o.label + '</span></button>';
+  });
+  html += '</div><div class="cp-feedback" id="cpf-' + id + '"></div></div></div>';
+  window['_cp_' + id] = options;
+  return html;
+}
+
+function answerCp(id, i) {
+  var o = window['_cp_' + id][i];
+  var fb = document.getElementById('cpf-' + id);
+  fb.innerHTML = '<span class="cp-emoji">' + o.emoji + '</span>' + o.feedback;
+  fb.classList.add('show');
+  var cp = document.getElementById('cp-' + id);
+  var btns = cp.querySelectorAll('.choice');
+  btns.forEach(function (b, j) { b.disabled = true; if (j === i) b.classList.add('picked'); });
+  if (!S.flags['cp-' + id]) {
+    S.flags['cp-' + id] = true;
+    o.dims.forEach(function (d) { award(d, 2, 'checkpoint: ' + id); });
+  }
+}
+
+function mark(id) {
+  if (!S.visited[id]) {
+    S.visited[id] = true;
+    var m = STATIONS[id].dims || [];
+    m.forEach(function (d) { award(d, 1, 'visited: ' + (STATIONS[id].short || id)); });
+    save();
+  }
+}
+
+function go(id) {
+  mark(id);
+  var st = STATIONS[id];
+  var el = document.getElementById('stage');
+  el.classList.remove('fade-in');
+  void el.offsetWidth;
+  el.innerHTML = st.render();
+  el.classList.add('fade-in');
+  window.scrollTo(0, 0);
+  save();
+}
+
+/* =========================================================
+   Content — stations
+   ========================================================= */
+var STATIONS = {};
+
+/* ---------- HUB ---------- */
+STATIONS.hub = {
+  short: 'start', dims: [],
+  render: function () {
+    function row(label, id) {
+      var done = S.visited[id];
+      return '<div class="map-row' + (done ? ' done' : '') + '"><span class="m-dot"></span>' + label + (done ? ' ✓' : '') + '</div>';
+    }
+    return '' +
+    '<div class="kicker">An interactive introduction · built for the Head of Content &amp; Curriculum role, Anthropic Education</div>' +
+    '<h1>What do you want to know about me today?</h1>' +
+    '<p class="lede">I’m Jennifer. I’ve spent 24 years designing learning for adults in Georgia public higher education, and the last three thinking <em>with</em> Claude about how meaning is represented — in people and in models. Rather than hand you a résumé, I built this page the way I build learning experiences. Pick a door.</p>' +
+    '<div class="choices">' +
+      '<button class="choice" onclick="go(\'a1\')"><span class="c-done">' + (S.visited.a3 ? '✓' : '') + '</span><span class="c-title">Who were you before Claude?</span><span class="c-sub">Georgia, y’all, welding torches, and a quarter-century of adult learners. Where the design philosophy comes from.</span></button>' +
+      '<button class="choice" onclick="go(\'b1\')"><span class="c-done">' + (S.visited.b3 ? '✓' : '') + '</span><span class="c-title">How do you actually work with Claude?</span><span class="c-sub">The 2022 encounter, the interpretability instruments I’ve built since, and what I’ve learned about what to trust it with.</span></button>' +
+      '<button class="choice" onclick="go(\'c1\')"><span class="c-done">' + (S.visited.c4 ? '✓' : '') + '</span><span class="c-title">How do you design learning?</span><span class="c-sub">PSAED, the production pipeline, service leadership with subject-matter experts, and a thesis about measurement.</span></button>' +
+    '</div>' +
+    '<h3 style="margin-top:38px">Or experience the framework directly</h3>' +
+    '<div class="choices">' +
+      '<button class="choice" onclick="go(\'social\')"><span class="c-done">' + (S.visited.social ? '✓' : '') + '</span><span class="c-title">☕ Have a conversation at your depth</span><span class="c-sub">Coffee, a meal, or a Zoom call — the answer changes with the relationship you choose.</span></button>' +
+      '<button class="choice" onclick="go(\'active\')"><span class="c-done">' + (S.visited.active ? '✓' : '') + '</span><span class="c-title">🤝 Think, pair, share</span><span class="c-sub">Reflect on something here, pair with a simulated colleague, and watch your exchange become formative data.</span></button>' +
+      '<button class="choice" onclick="go(\'exp\')"><span class="c-done">' + (S.visited.exp ? '✓' : '') + '</span><span class="c-title">🕰️ Talk to a past version of me</span><span class="c-sub">Dissertation-era, podcast-era, or midnight-interpretability-era Jennifer will take your questions.</span></button>' +
+      '<button class="choice" onclick="go(\'closing\')"><span class="c-done">' + (S.visited.closing ? '✓' : '') + '</span><span class="c-title">🧭 Skip to the point: why Anthropic?</span><span class="c-sub">The convergence. Fair warning — it lands harder after a door or two.</span></button>' +
+    '</div>' +
+    dnote('PSAED', 'This whole page is the framework demonstrating itself. The three doors are the <strong>P</strong>ersonal entry point — you start from what <em>you</em> care about, not from my chronology. The coffee/meal/Zoom station is <strong>S</strong>ocial. Think-pair-share is <strong>A</strong>ctive. Talking to past versions of me is <strong>E</strong>xperiential — you live inside a project instead of reading a summary of it. And the rubric in the corner is the <strong>D</strong>evelopmental layer: continuous, low-stakes formative assessment of what you’re actually building an understanding of. Toggle this layer anywhere; every station explains its own design.') +
+    '<div style="margin-top:30px">' +
+      '<div class="r-log-title" style="margin-bottom:8px">Your path so far</div>' +
+      row('Before Claude (personal)', 'a3') + row('Working with Claude (technical)', 'b3') + row('Designing learning (framework)', 'c4') +
+      row('Social depth', 'social') + row('Think-pair-share', 'active') + row('Past-Jennifer conversations', 'exp') + row('Why Anthropic', 'closing') +
+    '</div>';
+  }
+};
+
+/* ---------- PATH A: BEFORE CLAUDE ---------- */
+STATIONS.a1 = {
+  short: 'y’all', dims: ['values'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Before Claude · 1 of 3</div>' +
+    '<h2>Start with one word: <em>y’all</em></h2>' +
+    '<p>I grew up in a Georgia farming family. As a child, <em>y’all</em> carried no social marking at all — it was simply how you addressed more than one person. There was no “accent” because there was no outside.</p>' +
+    '<p>Then came the rupture: the discovery that my speech was <em>marked</em> — heard as Southern, as rural, as possibly uneducated. That moment restructured the meaning of every word I owned. The same voice that made me legible at home made me suspect in a seminar room. My accent was a gatekeeper.</p>' +
+    '<p>It was also a bridge. Years later, teaching English at a technical college, I used <em>y’all</em> to show adult learners — welders, machinists, nurses returning to school — that their natural solution to a gap Standard English never resolved (the second-person plural) was evidence of linguistic competence, not deficiency. One student, a middle-aged blue-collar man, told me: <em>“Keep teaching English like this because it is liberating.”</em></p>' +
+    '<p>That sentence has been my quality bar for learning content ever since.</p>' +
+    '<div class="block">Which thread do you want to pull?</div>' +
+    '<div class="choices">' +
+      '<button class="choice" onclick="revealA1(\'cost\')"><span class="c-title">The gatekeeper — what the accent cost</span><span class="c-sub">And why that made me pay attention to who gets filtered out of learning.</span></button>' +
+      '<button class="choice" onclick="revealA1(\'bridge\')"><span class="c-title">The bridge — what the accent taught</span><span class="c-sub">And how a marked word became a research instrument twenty years later.</span></button>' +
+    '</div>' +
+    '<div id="a1-cost" class="evidence" style="display:none"><div class="ev-label">The gatekeeper</div>' +
+      '<p>Every credential I earned — through a PhD in Curriculum and Instruction at Mercer in 2013 — I earned while sounding like someone the academy had already made assumptions about. That experience calibrated me permanently to the difference between <em>what a learner knows</em> and <em>what a system is prepared to hear from them</em>. Adult learners feel that gap in their bones; they arrive braced for it. Curriculum theorists call this lived dimension of education <em>currere</em> — William Pinar’s idea that curriculum is not a syllabus but a life being run. Good content design starts by taking the learner’s lived position seriously, because the learner already is.</p></div>' +
+    '<div id="a1-bridge" class="evidence" style="display:none"><div class="ev-label">The bridge</div>' +
+      '<p>The word never stopped working on me. In 2025 I turned it into an empirical instrument: a paper that takes Vygotsky’s claim that a word is a microcosm of consciousness, exposes my own developmental history with <em>y’all</em> using Pinar’s currere method, and then probes whether a token in a large language model carries meaning in any structurally analogous way. It lives in this same repository — <a href="../index.html">Is a Token a Word?</a> — with live probes anyone can run. A word that once marked me as an outsider became the unit of analysis in my interpretability research. That is what I mean when I say the personal is not decoration; it is method.</p></div>' +
+    ichip('a1', 'Why should a lived-experience story matter for a content leadership role?',
+      '<p>Because the audiences in this role — developers hitting a wall at 11pm, an enterprise team bracing for disruption, a consumer who assumes AI isn’t “for them” — all arrive with a lived position, the way my students did. Content that ignores that position gets skimmed. Content that starts from it gets finished. I don’t design from the material outward; I design from the learner inward. This page is doing it to you right now.</p>') +
+    dnote('P — Personal', 'The entry point is a single, concrete word rather than a biography, because learners attach to specifics. The two-thread choice is Pinar’s currere made clickable: the regressive and progressive movements of the same memory. You chose your own route into the material — which is the point.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'a2\')">Next: the ground shifts →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+function revealA1(which) {
+  document.getElementById('a1-' + which).style.display = 'block';
+  if (!S.flags['a1-' + which]) { S.flags['a1-' + which] = true; award('values', 1, 'pulled the ' + which + ' thread'); }
+}
+
+STATIONS.a2 = {
+  short: 'the ground shifts', dims: ['cx', 'lead'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Before Claude · 2 of 3</div>' +
+    '<h2>How do you teach welding online?</h2>' +
+    '<p>March 2020. I was at Athens Technical College — a hands-on institution where the curriculum lives in workshops, engine bays, and welding booths — and COVID closed the buildings. I led the move of our technical and trade programs online, including welding instruction.</p>' +
+    '<p>You cannot pretend a screen is a workshop, and the fastest way to lose a hands-on learner is to try. What survives a forced format change is not the format — it’s the <em>learning design underneath it</em>: what must be demonstrated, what must be practiced, what feedback loop tells the learner they’re improving, and what keeps them showing up when everything familiar is gone. We rebuilt around those invariants. The welders kept learning.</p>' +
+    '<p>That problem has followed me up every rung of scale since, and it’s the same problem each time:</p>' +
+    '<div class="evidence"><div class="ev-label">One problem, three scales</div>' +
+      '<p><strong>One college (Athens Tech):</strong> keep highly applied learners engaged through a format change nobody chose.</p>' +
+      '<p><strong>One university (Colorado Technical University):</strong> as University Dean of General Education and Psychology, I developed and managed three executive program directors, each owning a piece of the content and curriculum development process. The lesson: you scale craft by developing <em>people who own quality</em>, not by writing longer style guides.</p>' +
+      '<p style="margin-bottom:0"><strong>One state system (University System of Georgia):</strong> as Associate Vice Chancellor for Digital Learning, my portfolio spans 25 institutions — USG eCampus, GAtransfers, and the eCore/eMajor collaboratives. Recent work includes a leadership briefing on the federal earnings-accountability final rule and its program-exposure implications, fiscal analysis of eCampus structures at $48M scale, and a white paper arguing that a major LMS breach and LLM integration are structurally the same institutional governance problem. Different vocabulary, same underlying question: <em>how do humans keep learning when the ground shifts under them?</em></p></div>' +
+    '<p>AI is the biggest ground-shift adult learners have ever faced. It is the welding problem again, at the scale of everyone.</p>' +
+    ichip('a2', 'Content at Anthropic spans developers, consumers, enterprises, and the general public. Can she really own all of it?',
+      '<p>I already operate a portfolio with that shape. A welding student, a psychology program director, a chancellor’s cabinet, and a state legislature do not read the same document — but they are served by the same underlying design discipline and the same quality bar. The skill isn’t producing four kinds of content; it’s holding one coherent learning philosophy while translating it across audiences that will never meet each other. That’s been my job at three scales.</p>') +
+    dnote('D — Developmentally appropriate', 'Notice the sequencing: the same problem introduced at the smallest, most concrete scale (one welding booth) before expanding to 25 institutions. That’s scaffolding — you build the schema on the vivid case, then stretch it. Leading with “I manage a $48M portfolio” would be true and useless; nobody learns from the abstract end first.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'a3\')">Next: then Claude showed up →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+STATIONS.a3 = {
+  short: 'the encounter', dims: ['tech', 'values'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Before Claude · 3 of 3 — the hinge</div>' +
+    '<h2>Then Claude showed up</h2>' +
+    '<p>My first real interactions with Claude came in 2022–2023. I approached it the way most careful educators did: as an input/output prediction machine — something to be assessed, policed at the plagiarism boundary, and kept at arm’s length from real learning.</p>' +
+    '<p>The shift was metacognitive, and I can locate it precisely: the moment I stopped evaluating the outputs and started noticing <em>what was happening to my own thinking</em> during the exchange. I was formulating questions I hadn’t been able to formulate before. The instrument was changing the researcher. That is not a claim about what Claude is — I’m careful about those claims, as you’ll see on the technical path — it’s a claim about what Claude turned out to be <em>for</em>: something I could think with.</p>' +
+    '<div class="block">Everything on the other two doors of this page — the interpretability instruments, the measurement thesis, the reason I’m writing to Anthropic at all — dates from that hinge.</div>' +
+    checkpoint('a', 'Quick check — what do the y’all story and the welding story have in common?', [
+      { label: 'Both are about who gets to belong in a learning space', emoji: '🎯',
+        feedback: 'That’s the values thread — the accent marked who was presumed competent, and the format change threatened who could keep learning. Jennifer designs from exactly this question.', dims: ['values'] },
+      { label: 'Both are about keeping learning alive when the format is forced to change', emoji: '🌟',
+        feedback: 'That’s the complexity thread — a marked dialect and a closed workshop are both ground-shifts, and in both cases the move was to find the invariants underneath the format.', dims: ['cx'] },
+      { label: 'Both became raw material she later turned into rigorous work', emoji: '🔬',
+        feedback: 'Sharp — the word became a pre-registered research instrument, and the welding move became a scaling playbook. She metabolizes experience into method. That’s the technical thread hiding inside the personal one.', dims: ['tech'] }
+    ]) +
+    dnote('A — Active', 'A path never ends with exposition here; it ends with retrieval. The checkpoint forces one act of synthesis across stations — that’s the testing effect, kept at 20 seconds and zero stakes so it teaches instead of judging. Every option is defensible; what differs is which dimension of understanding it strengthens. That’s how the rubric in the corner stays formative rather than evaluative.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'b1\')">Follow the hinge: how she works with Claude →</button><button class="btn ghost" onclick="go(\'social\')">Or sit down for coffee ☕</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+/* ---------- PATH B: WITH CLAUDE ---------- */
+STATIONS.b1 = {
+  short: 'thinking with', dims: ['tech'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Working with Claude · 1 of 3</div>' +
+    '<h2>From prediction machine to thinking instrument</h2>' +
+    '<p>In 2022 I met Claude as most educators did — warily, as an input/output prediction machine to be assessed and contained. By 2023 something had inverted. The interesting question was no longer “is the output right?” but “what is this system <em>doing</em> with meaning, and what does working alongside it do to mine?”</p>' +
+    '<p>My training gave me an unusual toolkit for that question. My PhD is in Curriculum and Instruction (Mercer, 2013), with dissertation work in Tröhler, Saussure, and Vygotsky — and I treat Vygotsky, Freire, Bakhtin, and Pinar as one analytical system, not four separate theorists. Saussure’s langue/parole distinction, Vygotsky’s insistence on finding the right <em>unit of analysis</em>, Bakhtin’s dialogism: these turn out to map with unsettling precision onto the questions mechanistic interpretability is asking about features, tokens, and representations. I stopped treating that mapping as a metaphor and started treating it as a research program.</p>' +
+    '<p>So I did what I tell every faculty member to do with a new instrument: I built things with it until I had calibrated intuitions about what to trust it with.</p>' +
+    dnote('E — Experiential', 'This station could have said “she is a theorist who got interested in AI.” Instead the next station puts the actual instruments in your hands, because the claim “hands-on” should be demonstrated, not asserted. Show the work, then let the visitor poke at it.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'b2\')">See the instruments →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+STATIONS.b2 = {
+  short: 'the instruments', dims: ['tech'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Working with Claude · 2 of 3</div>' +
+    '<h2>The instruments I’ve built</h2>' +
+    '<p class="lede">Independent mechanistic interpretability work, done nights and weekends, in public. Each tab is a real build.</p>' +
+    '<div class="tabs">' +
+      '<button class="tab on" id="tab-0" onclick="pickTab(0)">Water Pattern Tool</button>' +
+      '<button class="tab" id="tab-1" onclick="pickTab(1)">hc_core probe</button>' +
+      '<button class="tab" id="tab-2" onclick="pickTab(2)">Dichotomy Probe</button>' +
+      '<button class="tab" id="tab-3" onclick="pickTab(3)">Is a Token a Word?</button>' +
+      '<button class="tab" id="tab-4" onclick="pickTab(4)">Earlier builds</button>' +
+    '</div>' +
+    '<div class="tabpane" id="tabpane"></div>' +
+    ichip('b2', 'Has she actually produced things with Claude herself, or does she just talk about it?',
+      '<p>The tabs above are the answer: a running SAE-based probe tool on Modal, a field-probe pipeline against GPT-2 small’s layer-7 features, a transformation probe, a pre-registered behavioral study with live API calls, and — before any of that — a RAG application and a faculty-facing course-redesign tool. All built with Claude as a working partner, all public. And this page itself was produced in collaboration with Claude, which felt like the only honest way to make it. My intuitions about what to trust the model with come from shipping with it, not from reading about it.</p>') +
+    dnote('E — Experiential', 'Tabs instead of a list: the visitor chooses which instrument to inspect, in whatever order their curiosity dictates. Interest-driven sequence beats author-driven sequence for retention — and the fact that only one pane is visible at a time is deliberate chunking.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'b3\')">Next: the caveat that matters most →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+var TABS = [
+  { meta: 'Gemma 2 2B · Gemma Scope SAEs · deployed on Modal',
+    body: '<p><strong>The Water Pattern Tool</strong> probes how a model internally represents a single concept — <em>water</em> — across contexts, using Gemma Scope sparse autoencoder features over Gemma 2 2B. It’s the direct computational descendant of the question my dissertation asked about human meaning: does one word carry a whole structure of sense with it? Here, the question is asked of SAE feature activations instead of a person.</p>' },
+  { meta: 'GPT-2 small · SAE features · layer 7',
+    body: '<p><strong>hc_core</strong> is a field-probe pipeline: a repeatable harness for probing how SAE features at GPT-2 small’s layer 7 respond as a concept moves through different semantic neighborhoods. Building it taught me more about the gap between “the feature fired” and “the model means something” than any paper could have — including a failure mode I’ll show you at the next station.</p>' },
+  { meta: 'transformation probe · dichotomous concept pairs',
+    body: '<p><strong>The Dichotomy Transformation Probe</strong> examines how representations behave under transformation between opposed concept pairs — testing whether the structure between poles is itself stable and meaningful. Saussure’s claim that meaning lives in difference, made operational.</p>' },
+  { meta: 'behavioral probes · live Anthropic API · pre-registered',
+    body: '<p><strong><a href="../index.html">Is a Token a Word?</a></strong> — the paper that shares this repository — takes Vygotsky’s unit-of-analysis question to LLMs directly: four live behavioral probes (running claude-sonnet-4 in real time, executable by any reader) test whether a token behaves like a Vygotskian unit of meaning. The follow-up six-item study (water, brother, dog, bread, stone, fear; controls: chair, window, bird) is <a href="../preregistration_views_1_5_6.md">pre-registered in this repo</a> — items, metrics, analysis plan, and falsification conditions fixed before data collection, deviations logged and dated. I hold my independent research to the standard I’d want to be held to.</p>' },
+  { meta: 'pre-interpretability builds · applied learning tools',
+    body: '<p>Before the interpretability work: <strong>Ali 1.0</strong>, a RAG-based reading companion app, and <strong>Endura</strong>, a faculty-facing tool for redesigning courses to be resilient to AI — built for instructors who were panicking about ChatGPT and needed a constructive path instead of a policing one. Both were how I learned what these systems are actually like to build on: retrieval behavior, failure modes, where the seams show.</p>' }
+];
+
+function pickTab(i) {
+  for (var j = 0; j < TABS.length; j++) {
+    var t = document.getElementById('tab-' + j);
+    if (t) t.classList.toggle('on', j === i);
+  }
+  var pane = document.getElementById('tabpane');
+  pane.innerHTML = '<div class="tp-meta">' + TABS[i].meta + '</div>' + TABS[i].body;
+  if (!S.flags['tab-' + i]) { S.flags['tab-' + i] = true; award('tech', 1, 'inspected instrument #' + (i + 1)); }
+}
+
+STATIONS.b3 = {
+  short: 'caveat discipline', dims: ['tech', 'values'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Working with Claude · 3 of 3</div>' +
+    '<h2>The caveat that matters most</h2>' +
+    '<p>Here is the story I’d tell an Anthropic researcher first, because it says more about how I work than any credential.</p>' +
+    '<p>While running my probe pipelines, I hit a wall: the SAE feature coordinates I was relying on were not stable in the way my analysis needed them to be. I diagnosed the problem — a coordinate-instability failure that undermines naive comparisons across feature spaces — and I did what a researcher should do: <strong>I documented it as a caveat comment in my own repo</strong>, scoping my claims down to what the method could actually support.</p>' +
+    '<p>Months later I read Anthropic’s work and found that the Jacobian lens had been built to solve precisely that failure. I had independently found the disease; Anthropic built the cure.</p>' +
+    '<div class="block"><strong>And here is the discipline:</strong> I did not run the Jacobian myself. So I don’t claim I did, and I don’t claim my diagnosis is “the same result.” I diagnosed a failure mode and preserved the distinction between what I established and what I read. If I ever blur that line, stop trusting me with your documentation.</div>' +
+    '<p>The same posture governs my reading of Anthropic’s J-space paper: I’ve mapped significant convergences with my own framework — and I keep an explicit list of where the convergence is structural versus where I might be pattern-matching because I want it to be true. My paper in this repo uses the word <em>simulates</em> everywhere ontology could sneak in, and its probes ship with their confounds stated up front.</p>' +
+    ichip('b3', 'Education content about AI can overclaim or underclaim. How would she set the quality bar?',
+      '<p>Calibration <em>is</em> the quality bar. Every claim in an educational artifact should be tagged, at least in the author’s head, as: established, demonstrated-here, reported-by-others, or hypothesis. The coordinate-instability story is my personal existence proof that I do this even when no one is checking — in independent research, in a caveat comment, at night. Teaching the public about AI while Anthropic’s credibility rides on every sentence demands exactly that reflex, made into an editorial system and taught to a team.</p>') +
+    checkpoint('b', 'What’s the load-bearing fact on this path?', [
+      { label: 'She builds real instruments, not slideware', emoji: '🔧',
+        feedback: 'Five public builds across two model families, one pre-registered study. The hands-on requirement of this role is already her weekend habit.', dims: ['tech'] },
+      { label: 'She found a real failure mode before reading the fix', emoji: '🧪',
+        feedback: 'Independent convergence with a problem Anthropic considered worth building a lens for — from someone outside the field, working alone. That’s research instinct.', dims: ['tech'] },
+      { label: 'She refuses to claim more than she ran', emoji: '⚖️',
+        feedback: 'The rarest one. “I did not run the Jacobian myself” is a sentence most applicants would quietly delete. She leads with it. That’s the epistemic culture Anthropic’s education content has to embody.', dims: ['values'] }
+    ]) +
+    dnote('D — Developmentally appropriate', 'The technical path ends on epistemics rather than on the most impressive build, because the terminal takeaway should be the durable one. Sequencing decides what a learner remembers: last position is privileged, so it goes to calibration, not hardware.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'c1\')">Now the framework itself →</button><button class="btn ghost" onclick="go(\'closing\')">Or jump to why Anthropic 🧭</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+/* ---------- PATH C: THE FRAMEWORK ---------- */
+STATIONS.c1 = {
+  short: 'PSAED', dims: ['lead'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Designing learning · 1 of 4</div>' +
+    '<h2>PSAED — and you’re inside it right now</h2>' +
+    '<p>Every learning object my teams ship has to pass five tests. It must be:</p>' +
+    '<div class="evidence">' +
+      '<p><strong>P — Personal.</strong> It meets the learner where they actually are — their context, their stakes, their prior knowledge — not where the org chart assumes they are.</p>' +
+      '<p><strong>S — Social.</strong> Learning is dialogic. The object creates an exchange — with a peer, a mentor, a community, or the material itself — rather than a broadcast.</p>' +
+      '<p><strong>A — Active.</strong> The learner does something and gets feedback on it. No doing, no learning; retrieval beats rereading every time it’s been tested.</p>' +
+      '<p><strong>E — Experiential.</strong> Wherever possible, the learner lives inside the real thing — the actual tool, the actual workflow, the actual problem — instead of an abstraction of it.</p>' +
+      '<p style="margin-bottom:0"><strong>D — Developmentally appropriate.</strong> Sequenced to the learner’s current edge — Vygotsky’s zone of proximal development — with continuous low-stakes checks that inform the design, not grade the person.</p>' +
+    '</div>' +
+    '<div class="block">The reveal, if you haven’t hit the toggle yet: <strong>this page is a PSAED object about me.</strong> Three personal entry doors (P), a conversation whose depth you choose (S), think-pair-share (A), conversations with past versions of me inside real projects (E), and the formative rubric in the corner (D). Press “Show the pedagogy” in the top bar and every station will explain its own construction. The medium is the message: I would never ask you to believe a design philosophy I wasn’t willing to demonstrate on myself.</div>' +
+    dnote('P/S/A/E/D', 'This is the one station where the design-notes layer is quoted in the main text — a deliberate breach of the fourth wall. Self-referential moments are expensive (they spend the learner’s attention on the frame rather than the content), so you get exactly one, placed where the framework is the content.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'c2\')">Next: the production pipeline →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+STATIONS.c2 = {
+  short: 'the pipeline', dims: ['lead', 'cx'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Designing learning · 2 of 4</div>' +
+    '<h2>How content actually ships</h2>' +
+    '<p>Philosophy without a pipeline is a poster. Here is the production system I run — five stages, each with its own objectives and analytics, visualized in a shared dashboard so stakeholders can see status without a single status meeting. Click a stage.</p>' +
+    '<div class="pipeline">' +
+      '<button class="pstage on" id="ps-0" onclick="pickStage(0)"><span class="p-num">01</span>Pre-scope</button>' +
+      '<button class="pstage" id="ps-1" onclick="pickStage(1)"><span class="p-num">02</span>Scope</button>' +
+      '<button class="pstage" id="ps-2" onclick="pickStage(2)"><span class="p-num">03</span>Build</button>' +
+      '<button class="pstage" id="ps-3" onclick="pickStage(3)"><span class="p-num">04</span>Go-to-market</button>' +
+      '<button class="pstage" id="ps-4" onclick="pickStage(4)"><span class="p-num">05</span>Improve</button>' +
+    '</div>' +
+    '<div class="pdetail" id="pdetail"></div>' +
+    '<p style="margin-top:22px">Two properties matter more than the boxes. First, <strong>Build runs on backward design</strong>: we fix the evidence of learning before we write a word of content, then design toward it. Second, <strong>the loop closes</strong>: stage five feeds stage one, and the dashboard makes the whole cycle legible to anyone — an SME, an executive, a new team member — without a meeting. Transparency is a deliverable.</p>' +
+    dnote('A — Active', 'The pipeline is clickable rather than drawn as a static diagram because interaction produces inspection: you attend to the stage you chose. In the real version, this is a live dashboard with per-stage analytics; here each card carries the stage’s objective and its instrument, which is the schema I actually manage by.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'c3\')">Next: the people part →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+var PSTAGES = [
+  { obj: 'Decide whether this content should exist at all.',
+    how: 'Audience evidence, demand signals, redundancy check against what already exists, and an honest kill-option. Most bad content is content that should never have entered the pipeline.',
+    dash: 'Proposals in triage · kill rate · evidence quality per proposal' },
+  { obj: 'Define the learner, the outcome, and the evidence of learning.',
+    how: 'Who exactly is this for, what will they be able to do afterward, and what observable behavior will tell us it worked? Scope ends with a measurable definition of done — before format is even discussed.',
+    dash: 'Outcomes defined · SME commitments secured · timeline confidence' },
+  { obj: 'Build backward from the evidence of learning.',
+    how: 'Backward design: assessments and feedback loops first, then experiences, then exposition. PSAED review is the quality gate. SMEs review for accuracy; the content team owns learnability.',
+    dash: 'Stage-gate status · PSAED review results · SME sign-off' },
+  { obj: 'Get it to the learners it was scoped for.',
+    how: 'Launch is a learning event too: discoverability, sequencing into existing journeys, and instrumentation switched on from day one — not bolted on after.',
+    dash: 'Reach vs. target audience · activation · early completion signal' },
+  { obj: 'Close the loop with evidence, then re-enter the pipeline.',
+    how: 'Scheduled review against the stage-two definition of done. What underperforms gets redesigned or retired; what works gets templated so the craft compounds. Findings feed the next pre-scope.',
+    dash: 'Outcome attainment · retire/redesign decisions · template yield' }
+];
+
+function pickStage(i) {
+  for (var j = 0; j < PSTAGES.length; j++) {
+    var t = document.getElementById('ps-' + j);
+    if (t) t.classList.toggle('on', j === i);
+  }
+  document.getElementById('pdetail').innerHTML =
+    '<div class="pd-row"><span class="pd-k">Objective</span>' + PSTAGES[i].obj + '</div>' +
+    '<div class="pd-row"><span class="pd-k">How</span>' + PSTAGES[i].how + '</div>' +
+    '<div class="pd-row" style="margin-bottom:0"><span class="pd-k">On the dashboard</span><span class="mono" style="font-size:13px">' + PSTAGES[i].dash + '</span></div>';
+  if (!S.flags['ps-' + i]) { S.flags['ps-' + i] = true; award('lead', 1, 'inspected pipeline stage ' + (i + 1)); }
+}
+
+STATIONS.c3 = {
+  short: 'service leadership', dims: ['lead', 'values'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Designing learning · 3 of 4</div>' +
+    '<h2>The people part: SMEs and the team</h2>' +
+    '<h3 style="margin-top:10px">Service leadership with subject-matter experts</h3>' +
+    '<p>My posture toward SMEs is fixed: <strong>listen first</strong>. The content team’s job is to translate expert knowledge into learnable, chunked, feedback-generating experience — not to override the expert’s judgment, and not to be a passive order-taker either. The SME owns <em>what is true</em>; the content team owns <em>what is learnable</em>; the negotiation between those two is where quality lives, and it only works if the experts trust that you heard them before you touched their material.</p>' +
+    '<p>At Anthropic, the SMEs are researchers and engineers working at the edge of the field. That raises the bar on both halves: the listening has to be technically competent enough to be worth their time (this is where my own interpretability work pays rent — I can read the papers), and the translation has to survive contact with an audience of millions.</p>' +
+    '<h3>Developing the team</h3>' +
+    '<p>At Colorado Technical University I developed and managed three executive program directors, each owning a piece of the content and curriculum development process. The management philosophy: give each person a whole piece of the pipeline, a clear quality bar, and the coaching to exceed it — then get out of the way. You scale craft through people who own quality, and then you encode what they’ve mastered into systems. In this era, that increasingly means encoding it into <em>AI-powered systems</em>: the judgment my directors carried in their heads is exactly the kind of judgment I now work on expressing in prompts, rubrics, and review pipelines that Claude can help execute.</p>' +
+    ichip('c3', 'Can she lead a content team — and how will she work with researchers who have no time to spare?',
+      '<p>I’ve done the specific version of this job: hired into expertise I didn’t possess, developed three directors into owners of their domains, and held a quality bar across work I didn’t personally produce. With researchers, my rule is that every interaction must return more value than it costs them — arrive having read their work, ask the two questions only they can answer, and show them their expertise made learnable in a form they’re proud to have their name near. Service leadership isn’t deference; it’s competence placed at someone else’s disposal.</p>') +
+    dnote('S — Social', 'The SME relationship is described as a negotiation between two kinds of ownership rather than a workflow, because that’s the actual social contract that makes expert-derived content good. Notice also what this station does not do: it doesn’t claim content expertise transfers automatically to leading people — it cites the specific management record instead.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'c4\')">Next: the measurement thesis →</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+STATIONS.c4 = {
+  short: 'measurement thesis', dims: ['tech', 'cx'],
+  render: function () {
+    return '' +
+    '<div class="kicker">Designing learning · 4 of 4</div>' +
+    '<h2>Measure development, not engagement</h2>' +
+    '<p>The role owns learning measurement, so here is my thesis, stated plainly: <strong>engagement metrics measure attention; education should measure conceptual development.</strong> Completions, time-on-page, and satisfaction scores tell you a learner was present. They cannot tell you whether the concept they left with is structurally different from the one they arrived with — and that difference is the product.</p>' +
+    '<p>This is Vygotsky’s unit-of-analysis problem wearing analytics clothing: what is the smallest measurable thing that still retains the properties of learning? I don’t think the field has answered it, and I think the answer is buildable now in a way it never was before.</p>' +
+    '<div class="evidence"><div class="ev-label">The seed of the answer — a working exercise</div>' +
+      '<p>I’m currently running a structural alignment of two reverse-engineering frameworks: Vygotsky’s <em>Mind in Society</em> on one axis, Anthropic’s <em>Mathematical Framework for Transformer Circuits</em> on the other, with <em>Toy Models of Superposition</em> folded in as a third text. The comparison is analogical, not causal — both frameworks reverse-engineer how a system comes to carry meaning, one in human development, one in transformer internals, with the human/machine distinction deliberately bracketed. What makes it more than an intellectual exercise: both traditions have hard-won methods for detecting <em>structural change in a representation over time</em>. That is exactly what learning measurement is missing. A learner’s explanations, transfer attempts, and misconception patterns are probeable — the way I probe features — for evidence that a concept has actually reorganized.</p></div>' +
+    '<p>The rubric in the corner of this page is a toy of that idea: it doesn’t track how long you stayed, it tracks which dimensions of understanding-Jennifer you’ve had the chance to develop, fed by what you did. Now imagine that built seriously, with Claude in the loop, across Anthropic’s entire education portfolio. That’s the differentiated measurement program I want to build.</p>' +
+    ichip('c4', 'How would she know whether Anthropic’s education content is working?',
+      '<p>Three layers. Engagement analytics as the floor — necessary plumbing, never the headline. Outcome attainment against each artifact’s pre-committed definition of done — that’s the pipeline’s stage five. And the differentiator: instruments that probe conceptual development directly, using Claude to analyze learner explanations and transfer performance for structural change, built on the Vygotsky-circuits alignment work above. Anthropic is the one organization where the third layer isn’t science fiction, because the instrument and the education portfolio live in the same house.</p>') +
+    checkpoint('c', 'The framework path in one move — what makes her approach distinct?', [
+      { label: 'The framework is demonstrated, not described', emoji: '🪞',
+        feedback: 'PSAED isn’t on a slide; you’re standing in it. Anyone can claim a philosophy — the page is the receipt.', dims: ['lead'] },
+      { label: 'The pipeline makes quality legible without meetings', emoji: '📊',
+        feedback: 'Five stages, each instrumented, one shared dashboard. Craft that scales is craft made visible — that’s also how you encode it into AI-powered systems later.', dims: ['cx'] },
+      { label: 'The measurement thesis connects her theory to Anthropic’s own papers', emoji: '🔭',
+        feedback: 'Vygotsky crossed with Transformer Circuits, carefully bracketed, aimed at the one metric problem every education team has: proving development instead of attention.', dims: ['tech'] }
+    ]) +
+    dnote('D — Developmentally appropriate', 'The most speculative material on the whole page (the measurement thesis) is placed last on its path, after three stations of concrete track record — so it reads as an extension of evidence, not a substitute for it. And its central analogy is explicitly flagged as analogical. Calibration again, in the curriculum design itself.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'closing\')">To the convergence 🧭</button><button class="btn ghost" onclick="go(\'active\')">Or try think-pair-share 🤝</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+/* ---------- SOCIAL ---------- */
+STATIONS.social = {
+  short: 'social depth', dims: ['values'],
+  render: function () {
+    return '' +
+    '<div class="kicker">The Social station · you choose the depth</div>' +
+    '<h2>How much time do we have?</h2>' +
+    '<p class="lede">Same question — “why do you want this job?” — answered at the depth of the relationship you pick. Because a real answer is shaped by who’s across the table and how long they’re staying.</p>' +
+    '<div class="depth-grid">' +
+      '<div class="depth-card" id="dc-coffee" onclick="pickDepth(\'coffee\')"><span class="d-emoji">☕</span><span class="d-name">Coffee</span><span class="d-sub">five minutes, standing up<br>· the Haiku tier ·</span></div>' +
+      '<div class="depth-card" id="dc-meal" onclick="pickDepth(\'meal\')"><span class="d-emoji">🍲</span><span class="d-name">A meal</span><span class="d-sub">an hour, stories allowed<br>· the Sonnet tier ·</span></div>' +
+      '<div class="depth-card" id="dc-zoom" onclick="pickDepth(\'zoom\')"><span class="d-emoji">💻</span><span class="d-name">A Zoom call</span><span class="d-sub">thirty minutes, fully direct<br>· the extended-thinking tier ·</span></div>' +
+    '</div>' +
+    '<div class="depth-answer" id="da-coffee"><div class="evidence"><div class="tier-label">depth: quick · in production this would route to a fast, small model — here it’s simply written short</div>' +
+      '<p>Short version: I’ve spent 24 years turning expertise into things adults can actually learn from, and the last three thinking with Claude about how meaning itself works — building interpretability probes at night while running digital learning for 25 institutions by day. Anthropic’s education role is the only job I know of where those two lives are the same job. Also, I have a story about teaching welding over the internet. Buy me a longer coffee sometime.</p></div></div>' +
+    '<div class="depth-answer" id="da-meal"><div class="evidence"><div class="tier-label">depth: narrative · a mid-tier model with room to breathe — pre-composed here, honestly labeled</div>' +
+      '<p>Let me answer with the shape of the thing. In 2020 I stood in front of the problem of teaching welding online, and what I learned is that when the ground shifts, you save the learning by finding what’s invariant underneath the format. In 2022 I met Claude, and after the initial wariness wore off I noticed something I had no professional language for: it wasn’t the outputs that interested me, it was what thinking alongside the system was doing to my own questions. I started building — a RAG reading companion, a faculty tool, then real interpretability instruments over SAE features — and I found my dissertation training (Vygotsky, Saussure, the unit-of-analysis problem) mapping onto mechanistic interpretability with a precision that stopped feeling like coincidence.</p>' +
+      '<p>So why Anthropic, why this role? Because AI is the welding moment for everyone at once — the biggest ground-shift adult learners have ever faced — and the organization best positioned to teach the world how to think with these systems is the one that most rigorously studies what they are. I’ve been doing both halves of this job separately for years: education at state scale by day, model internals by night. I’d like to stop commuting between them.</p></div></div>' +
+    '<div class="depth-answer" id="da-zoom"><div class="evidence"><div class="tier-label">depth: direct, structured · the extended-thinking tier — maximum reasoning per minute, pre-composed here</div>' +
+      '<p>You have a role with six requirements; here is the mapping, then the risk assessment. <strong>Own content end-to-end across audiences:</strong> I run a portfolio today spanning 25 institutions and every audience from welding students to a chancellor’s cabinet. <strong>Hands-on with Claude in production:</strong> five public builds, one pre-registered live-probe study, real calibrated intuitions about failure modes — see the technical door. <strong>Manage a team:</strong> developed three executive program directors at CTU into owners of the pipeline. <strong>Set the quality bar:</strong> PSAED plus backward design, enforced by stage gates, demonstrated by this page. <strong>Own learning measurement:</strong> a differentiated thesis — measure conceptual development, not engagement — with a concrete research program behind it. <strong>Scale craft into AI-powered systems:</strong> that’s the CTU lesson plus the instrumentation habit, pointed at Claude.</p>' +
+      '<p>The honest risks: I come from public higher education, not tech, so my first ninety days need deliberate immersion in how Anthropic ships; and my interpretability work is independent scholarship, not employment — I’ll say so whenever it matters, the way I flag that I diagnosed the coordinate-instability problem but never ran the Jacobian myself. I consider that calibration reflex part of the qualification. Questions.</p></div></div>' +
+    '<p class="quiet" style="margin-top:8px">Full disclosure, because calibration is the brand: this is a static page — no API is called, and all three answers were composed in advance. The design decision being demonstrated is that <em>response depth should be a learner’s choice</em>; in a production build, these three cards would genuinely route to different model tiers. Pretending otherwise would be a strange way to apply for a job about trustworthy AI education.</p>' +
+    dnote('S — Social', 'PSAED’s Social component made literal: the visitor sets the relational register and the content honors it. Three depths of the same answer also demonstrate audience translation — the coffee, meal, and Zoom versions contain the same facts at different bandwidths, which is the core skill of writing for developers, consumers, and executives from one source of truth.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'active\')">Next: think, pair, share 🤝</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+function pickDepth(which) {
+  ['coffee', 'meal', 'zoom'].forEach(function (d) {
+    document.getElementById('dc-' + d).classList.toggle('on', d === which);
+    document.getElementById('da-' + d).classList.toggle('show', d === which);
+  });
+  if (!S.flags['depth-' + which]) { S.flags['depth-' + which] = true; award('values', 1, 'chose the ' + which + ' depth'); }
+}
+
+/* ---------- ACTIVE: THINK-PAIR-SHARE ---------- */
+STATIONS.active = {
+  short: 'think-pair-share', dims: ['lead'],
+  render: function () {
+    return '' +
+    '<div class="kicker">The Active station · think → pair → share</div>' +
+    '<h2>Your turn to process</h2>' +
+    '<p class="lede">The oldest move in active learning, run on this page’s own content. Think: pick the idea that stuck. Pair: pick a partner to test it against. Share: your exchange lands in the formative-data panel.</p>' +
+    '<h3>1 · Think — which idea from this page is worth interrogating?</h3>' +
+    '<div class="choices" id="tps-ideas">' +
+      '<button class="choice" onclick="tpsIdea(0)"><span class="c-title">“The medium is the message”</span><span class="c-sub">A job application built as a working demo of the applicant’s framework.</span></button>' +
+      '<button class="choice" onclick="tpsIdea(1)"><span class="c-title">“Measure development, not engagement”</span><span class="c-sub">The claim that learning analytics is asking the wrong question.</span></button>' +
+      '<button class="choice" onclick="tpsIdea(2)"><span class="c-title">“Curriculum theory maps onto interpretability”</span><span class="c-sub">Vygotsky and Saussure as working tools for studying model internals.</span></button>' +
+    '</div>' +
+    '<div id="tps-partners" style="display:none">' +
+      '<h3>2 · Pair — who do you want to test it with?</h3>' +
+      '<div class="choices">' +
+        '<button class="choice" onclick="tpsPair(0)"><span class="c-title">🔬 A skeptical interpretability researcher</span><span class="c-sub">Allergic to loose analogies.</span></button>' +
+        '<button class="choice" onclick="tpsPair(1)"><span class="c-title">📋 The hiring manager</span><span class="c-sub">Wants to know what this means for the role.</span></button>' +
+        '<button class="choice" onclick="tpsPair(2)"><span class="c-title">🏫 A community-college faculty member</span><span class="c-sub">Jennifer’s home audience — hard to impress, easy to lose.</span></button>' +
+      '</div>' +
+    '</div>' +
+    '<div id="tps-exchange" style="display:none"></div>' +
+    dnote('A — Active', 'Think-pair-share works because articulation under mild social pressure forces retrieval and reorganization. The “pair” here is simulated — each partner applies a genuinely different critical lens, so choosing a partner is choosing which stress-test the idea gets. The “share” step writes to the visible formative-data panel: assessment as information the learner can see, not a grade that happens to them.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'exp\')">Next: talk to a past me 🕰️</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+var TPS_IDEAS = ['the medium is the message', 'measure development, not engagement', 'curriculum theory maps onto interpretability'];
+var TPS = [
+  [ /* idea 0 */
+    { who: 'Skeptical researcher', them: 'Cute framing, but a webpage isn’t evidence of anything except web design. Where’s the rigor?',
+      me: 'Fair — so audit it as an artifact, not a claim. Every station states its design rationale in a toggleable layer, the assessment model is inspectable in the corner, and the limits are disclosed in-line (the “social” tiers are simulated, and the page says so). That’s the same standard as her paper: method exposed, confounds stated. Rigor here means the artifact can survive its own documentation.' },
+    { who: 'Hiring manager', them: 'Demos are nice. Does this transfer to producing actual courseware at Anthropic’s scale?',
+      me: 'The transferable part isn’t the page — it’s the habit of making every artifact carry its own pedagogy and its own instrumentation. A team that ships PSAED-tagged, dashboard-visible, outcome-committed objects produces courseware you can manage without meetings. The page is one person’s proof that the habit is real.' },
+    { who: 'Faculty member', them: 'My students would never click through something this fancy. What’s in it for my classroom?',
+      me: 'Strip the styling and what’s left is: let learners pick their entry point, make one choice matter on every screen, check understanding lightly and visibly. All three run fine on paper. The fancy part is optional; the structure is the pedagogy.' }
+  ],
+  [ /* idea 1 */
+    { who: 'Skeptical researcher', them: '“Measuring conceptual development” sounds unfalsifiable. Engagement is at least a real number.',
+      me: 'It’s a real number that measures the wrong construct. Development is operationalizable: explanation quality over time, transfer to novel cases, misconception extinction — all probeable, especially with a model in the loop to analyze learner language at scale. Her pre-registered study shows she knows what operationalization and falsification conditions look like. The thesis isn’t “vibes over numbers”; it’s “better-constructed numbers.”' },
+    { who: 'Hiring manager', them: 'Our stakeholders ask for completion rates. You’re proposing something they didn’t ask for.',
+      me: 'Keep shipping completion rates — they’re the floor, and the pipeline’s stage five already reports them. The proposal is a third layer on top, piloted small, that eventually answers the question executives actually mean when they ask “is it working?” Nobody funds education to produce completions.' },
+    { who: 'Faculty member', them: 'We’ve been burned by every new analytics regime. Why is this one different?',
+      me: 'Because it measures the artifact, not the teacher. The unit under assessment is the content’s pre-committed definition of done — if learners don’t develop, the content gets redesigned or retired. That’s the loop she runs; the analytics point at her own team’s work first.' }
+  ],
+  [ /* idea 2 */
+    { who: 'Skeptical researcher', them: 'Vygotsky-to-transformers is exactly the kind of analogy that collapses on contact with math.',
+      me: 'Which is why she brackets it explicitly: the alignment of Mind in Society with the Transformer Circuits framework is analogical, not causal, and she says so in writing. The empirical claim is narrower — that unit-of-analysis discipline generates good probe designs — and there she has receipts: instruments over SAE features, a failure mode she diagnosed independently that Anthropic later built the Jacobian lens to solve, and the documented restraint of not claiming she ran the fix.' },
+    { who: 'Hiring manager', them: 'Interesting scholarship, but the role is content leadership, not research.',
+      me: 'The role requires producing content with Claude and real intuition about what to trust it with. Her intuitions come from probing model internals herself — which is also what makes her legible to your researchers as a translation partner. The scholarship isn’t adjacent to the job; it’s the qualification for its hardest requirement.' },
+    { who: 'Faculty member', them: 'I can’t even get my students to trust spellcheck. What does interpretability do for me?',
+      me: 'It’s the difference between “trust the tool” and “here’s what the tool is doing.” Her faculty tool Endura took that exact approach — give instructors a constructive path instead of a policing one. People extend trust to what they’ve been helped to understand; that’s as true of AI as of any student.' }
+  ]
+];
+var tpsState = { idea: null };
+
+function tpsIdea(i) {
+  tpsState.idea = i;
+  var btns = document.querySelectorAll('#tps-ideas .choice');
+  btns.forEach(function (b, j) { b.classList.toggle('picked', j === i); });
+  document.getElementById('tps-partners').style.display = 'block';
+  document.getElementById('tps-exchange').style.display = 'none';
+  document.getElementById('tps-partners').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function tpsPair(p) {
+  if (tpsState.idea === null) return;
+  var x = TPS[tpsState.idea][p];
+  var el = document.getElementById('tps-exchange');
+  el.style.display = 'block';
+  el.innerHTML = '<h3>3 · Share — your exchange</h3><div class="dialogue">' +
+    '<div class="bubble them"><span class="b-who">' + x.who + '</span>' + x.them + '</div>' +
+    '<div class="bubble me"><span class="b-who">The case for Jennifer</span>' + x.me + '</div></div>' +
+    '<div class="block" style="font-size:16px">📊 <strong>Shared.</strong> This exchange — the idea you chose, the critic you chose, and the fact that you ran the test — just landed in your formative-data panel (bottom-right). That’s the Active principle: what you did became visible evidence of what you’re learning, without ever being graded.</div>';
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  var key = 'tps-' + tpsState.idea + '-' + p;
+  if (!S.flags[key]) {
+    S.flags[key] = true;
+    award('lead', 2, 'paired “' + TPS_IDEAS[tpsState.idea] + '” with ' + x.who.toLowerCase());
+  }
+}
+
+/* ---------- EXPERIENTIAL: PAST JENNIFERS ---------- */
+STATIONS.exp = {
+  short: 'past Jennifers', dims: ['values', 'tech'],
+  render: function () {
+    return '' +
+    '<div class="kicker">The Experiential station · live inside a project</div>' +
+    '<h2>Talk to a past version of me</h2>' +
+    '<p class="lede">Reading about finished projects is the least experiential genre there is. Instead: pick an era, and that Jennifer — inside that project, with that era’s knowledge and none of what came later — will take your questions.</p>' +
+    '<div class="depth-grid">' +
+      '<div class="depth-card" id="era-diss" onclick="pickEra(\'diss\')"><span class="d-emoji">📜</span><span class="d-name">2013 · Dissertation-era</span><span class="d-sub">Mercer University, deep in Tröhler, Saussure, Vygotsky</span></div>' +
+      '<div class="depth-card" id="era-pod" onclick="pickEra(\'pod\')"><span class="d-emoji">🎙️</span><span class="d-name">Podcast-era</span><span class="d-sub">building a show to get faculty thinking about learning support</span></div>' +
+      '<div class="depth-card" id="era-mi" onclick="pickEra(\'mi\')"><span class="d-emoji">🌙</span><span class="d-name">Midnight MI-era</span><span class="d-sub">probes running on Modal while the day job sleeps</span></div>' +
+    '</div>' +
+    '<div id="era-qs"></div>' +
+    '<div id="era-answer"></div>' +
+    '<p class="quiet">These answers are written by present-day me, in the voice and knowledge-state of each era — reconstructed honestly, not transcribed. The eras are real; the interview format is the design.</p>' +
+    dnote('E — Experiential', 'The visitor enters the project at its own moment in time — dissertation-era Jennifer doesn’t know Claude exists, and the answers respect that boundary. Temporal situatedness is what makes it experiential rather than retrospective: you’re inside the work while it’s uncertain, which is the only honest way to show how the thinking developed.') +
+    '<div class="btnrow"><button class="btn" onclick="go(\'closing\')">To the convergence 🧭</button><button class="btn ghost" onclick="go(\'hub\')">Back to start</button></div>';
+  }
+};
+
+var ERAS = {
+  diss: {
+    name: '2013 Jennifer', qs: [
+      { q: 'Why are you spending your dissertation on a Swiss linguist and a Soviet psychologist?',
+        a: 'Because they’re asking the same question from opposite ends and nobody seems to have noticed. Saussure says meaning lives in a system of differences — langue — that no individual speaker contains. Vygotsky says the way into consciousness is finding the right unit of analysis, the smallest thing that keeps the properties of the whole, and he picks word meaning. And Tröhler keeps me honest about the history — how these ideas travel and get deformed by the institutions that adopt them. Put together, that’s a method for studying how meaning is structured in systems. I have no idea yet what I’ll point it at beyond curriculum. Ask me in a decade.' },
+      { q: 'What’s the hardest part right now?',
+        a: 'Holding the theorists together when the academy wants them siloed. There are Vygotskians and there are curriculum theorists and there are historians of education, and my committee spans all three, and I keep insisting the dissertation only works if Tröhler, Saussure, and Vygotsky operate as one analytical system. Also — candidly — doing this in my accent. Every seminar I walk into, I can feel the half-second recalibration when I start talking. It’s made me very precise. If people are going to underestimate the drawl, the sentences underneath it are going to be load-bearing.' },
+      { q: 'Where do you think this work goes?',
+        a: 'A review essay of mine ran in the Journal of Curriculum and Pedagogy last year, and the dream is that the people I’m reading someday read me back. Beyond that, I want the unit-of-analysis question to matter outside theory — in how institutions actually measure whether anyone learned anything, which is currently done with instruments nobody would defend at a dissertation defense. (A postscript from the present, breaking the era rule just once because it’s too good: Tröhler and Horlacher cited that essay in a 2020 Springer handbook chapter. The people I was reading read me back.)' }
+    ]
+  },
+  pod: {
+    name: 'Podcast-era Jennifer', qs: [
+      { q: 'A dean with a podcast. Why?',
+        a: 'Because memos don’t change minds and mandates make enemies. I needed faculty to think differently about learning support — to see it as pedagogy, not remediation — and the people I most needed to reach are exactly the people who don’t open a PDF from administration. But they’ll listen to colleagues talking honestly while they drive. A podcast meets them in their actual lives, on their terms, with no compliance flavor. It’s the least efficient medium per minute and the most effective per mind changed.' },
+      { q: 'What have you learned from making it?',
+        a: 'That production is pedagogy. Choosing what to cut teaches you what the essential structure of an idea is. Sequencing an episode is curriculum design at 44.1kHz. And conversation — real dialogue, not scripted segments — surfaces the actual objections faculty have, which are almost never the ones administration prepares for. I’m also learning the unglamorous craft: audio levels, release cadence, how a format holds an audience. Every format I master becomes a format my teams can deploy later.' },
+      { q: 'Would this work for teaching people about, say, technology changes?',
+        a: 'It’s the best tool I know for exactly that, because technology change is emotional before it’s technical. Faculty aren’t resistant to tools; they’re protective of their craft and afraid of being made foolish in front of students. A conversational medium lets you address the fear directly, with peers modeling curiosity instead of authority demanding adoption. Whatever the next big disruption is, I’d reach for this pattern: honest voices, learner’s terms, no compliance flavor.' }
+    ]
+  },
+  mi: {
+    name: 'Midnight-MI Jennifer', qs: [
+      { q: 'It’s late. What’s actually running right now?',
+        a: 'The Water Pattern Tool is on Modal, walking Gemma 2 2B with Gemma Scope SAEs while I watch feature activations for “water” move across contexts. The hc_core pipeline does the same discipline against GPT-2 small at layer 7. By day I’m responsible for digital learning across 25 public institutions; by night I get to ask the question underneath that whole career — what is meaning, structurally? — against a system that will actually hold still for the probe. Vygotsky had children and clinical method. I have SAE features and API calls. The methodological problem is identical: find the unit that keeps the properties of the whole.' },
+      { q: 'What’s the most frustrating thing in the work right now?',
+        a: 'I’ve hit an instability I can’t engineer around: the feature coordinates I’m comparing across contexts aren’t stable enough to support the comparisons my analysis wants to make. I’ve written it up as a caveat in the repo and scoped my claims down accordingly, which is painful — the un-caveated version is a much better story. But I’d rather have a smaller true claim than a bigger fragile one. If someone eventually builds proper machinery for this problem, I’ll be first in line to read it. (Present-day note, preserved exactly because the era version was written before the punchline: Anthropic’s Jacobian lens turned out to be that machinery. I still haven’t run it, and I still say so.)' },
+      { q: 'Why publish this on Substack instead of just keeping notes?',
+        a: 'Working in public is a forcing function — readers who show up for interpretability content ask questions that sharpen the next probe, and an audience is accountability you can’t rationalize away at midnight. It’s also, frankly, the educator in me refusing to die: if I’m learning something this interesting, the reflex is to build the on-ramp for the next person while the difficulty is still fresh in my hands. The best explanations come from people who just finished being confused.' }
+    ]
+  }
+};
+
+function pickEra(which) {
+  ['diss', 'pod', 'mi'].forEach(function (e) {
+    document.getElementById('era-' + e).classList.toggle('on', e === which);
+  });
+  var era = ERAS[which];
+  var html = '<h3>Ask ' + era.name + ':</h3><div class="choices">';
+  era.qs.forEach(function (q, i) {
+    html += '<button class="choice" onclick="askEra(\'' + which + '\',' + i + ')"><span class="c-title" style="font-size:18px">' + q.q + '</span></button>';
+  });
+  html += '</div>';
+  document.getElementById('era-qs').innerHTML = html;
+  document.getElementById('era-answer').innerHTML = '';
+  if (!S.flags['era-' + which]) { S.flags['era-' + which] = true; award(which === 'mi' ? 'tech' : 'values', 1, 'visited ' + era.name); }
+}
+
+function askEra(which, i) {
+  var era = ERAS[which];
+  document.getElementById('era-answer').innerHTML =
+    '<div class="dialogue"><div class="bubble them"><span class="b-who">You asked</span>' + era.qs[i].q + '</div>' +
+    '<div class="bubble me"><span class="b-who">' + era.name + '</span>' + era.qs[i].a + '</div></div>';
+  document.getElementById('era-answer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  var key = 'eq-' + which + '-' + i;
+  if (!S.flags[key]) { S.flags[key] = true; award(which === 'mi' ? 'tech' : 'values', 1, 'asked ' + era.name + ' a question'); }
+}
+
+/* ---------- CLOSING ---------- */
+STATIONS.closing = {
+  short: 'why Anthropic', dims: ['values'],
+  render: function () {
+    var pathsDone = (S.visited.a3 ? 1 : 0) + (S.visited.b3 ? 1 : 0) + (S.visited.c4 ? 1 : 0);
+    var nudge = pathsDone === 0 ?
+      '<div class="block" style="font-size:16px">You skipped straight here — welcome, efficient reader. This lands harder with a door or two behind you, but the argument stands alone.</div>' : '';
+    return '' +
+    '<div class="kicker">Convergence</div>' +
+    '<h2>Why Anthropic. Why now. Why me.</h2>' + nudge +
+    '<p>Here is the thing I couldn’t have planned: <strong>Claude and I have been developing in parallel.</strong> In 2022, Claude was new in the world and I was a career educator meeting it warily. Between then and now, Claude became capable of serious intellectual partnership — and I became someone who builds interpretability instruments, pre-registers probe studies, and reads Anthropic’s papers finding my own dissertation’s questions in the mathematics. Neither of us is what we were. The development happened <em>together</em>, and that parallel development is my qualification, because it means my intuitions about learning with Claude come from having done it, continuously, since the beginning.</p>' +
+    '<p>Claude became, for me, an instrument for seeing previously invisible things about learning and meaning-making — the way a microscope didn’t just answer biology’s questions but changed what questions biology could ask. A tool like that deserves an education function built to the same standard as the research it rests on.</p>' +
+    '<div class="block">So the pitch is not “hire me because I’m qualified.” The pitch is: <strong>I have been thinking with your own technology about exactly this problem</strong> — how humans develop new conceptual structures, how you’d know it happened, and how to build learning experiences worthy of both the humans and the instrument. For years. In public. On my own time. The job posting is a description of what I already do; what Anthropic adds is scale, colleagues, and the mission that makes the work matter.</p></div>' +
+    '<p>And about mission: my entire career has been in public higher education — institutions whose reason for existing is that powerful things (literacy, credentials, mobility) should be genuinely accessible, safely, to everyone and not just the already-advantaged. I read Anthropic’s mission as the same commitment pointed at the most powerful cognitive technology yet built. Educating the world about AI isn’t adjacent to safety; done right, it <em>is</em> safety work — a public that understands what these systems are and aren’t is the substrate every other safeguard depends on.</p>' +
+    ichip('closing', 'Does she understand what Anthropic is actually trying to do?',
+      '<p>I believe the education mandate is a load-bearing part of the safety mission: the world’s transition to advanced AI goes better if people genuinely understand these systems — their real capabilities, their real limits, how to think with them rather than merely use them. That framing is why my caveat discipline isn’t a personality quirk here; it’s the job. Content that overclaims burns trust Anthropic can’t buy back, and content that underclaims leaves people unprepared. The quality bar is calibration, at scale, in every format, for every audience. That’s the job I’ve been rehearsing for twenty-four years.</p>') +
+    '<h3>The record, in one place</h3>' +
+    '<div class="evidence" style="font-size:16.5px">' +
+      '<p>📄 <a href="../index.html">Is a Token a Word?</a> — live-probe paper in this repository, with a <a href="../preregistration_views_1_5_6.md">pre-registered follow-up study</a>.</p>' +
+      '<p>🔬 <a href="https://github.com/jenniferchamberspalmer-research/What-if-Conceptual-Turn-in-MI-">What if? — the Conceptual Turn in MI</a> — public research repository, alongside the Water Pattern Tool, hc_core, and Dichotomy Probe work described on the technical path.</p>' +
+      '<p>✍️ An MI-focused Substack with an engaged readership, where the instruments and the thinking develop in public.</p>' +
+      '<p>🎓 PhD, Curriculum &amp; Instruction (Mercer, 2013) · 2012 essay in the <em>Journal of Curriculum and Pedagogy</em>, cited by Tröhler &amp; Horlacher (Springer, 2020) — published as Jennifer Chambers Claxton.</p>' +
+      '<p style="margin-bottom:0">🏛️ Associate Vice Chancellor for Digital Learning, University System of Georgia — 24 years across UGA, Athens Technical College, CTU, and USG.</p>' +
+    '</div>' +
+    '<p style="margin-top:26px">Thank you for walking through this. Check the rubric in the corner — that’s what you built while you were here, which was the point all along.</p>' +
+    '<p><strong>— Jennifer Chambers Palmer</strong><br><span class="mono" style="font-size:14px">jenniferchamberspalmer@gmail.com</span></p>' +
+    dnote('Synthesis', 'Pinar’s currere ends in the synthetical moment: past, imagined future, and present integrated into one account that includes the self. This station is that moment — the personal path (regressive), the measurement thesis (progressive), and the role mapping (analytical) converging. If you walked more than one path to get here, you experienced the synthesis rather than being told about it. That asymmetry — experienced versus told — is the entire design philosophy in one sentence.') +
+    '<div class="btnrow"><button class="btn ghost" onclick="go(\'hub\')">↩ Explore another door</button></div>';
+  }
+};
+
+/* =========================================================
+   Boot
+   ========================================================= */
+go('hub');
+renderRubric();
+</script>
+</body>
+</html>
