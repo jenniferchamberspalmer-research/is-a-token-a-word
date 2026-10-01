@@ -1,0 +1,114 @@
+# Operator Probe, Run R1 (therefore / Wikipedia).
+#
+# Every value marked `null  # PREREG` corresponds to a blank field in
+# PREREGISTRATION.md. The pipeline refuses to pull data, capture, or render
+# while any of them is null (opprobe.config.require_complete). Values are
+# filled only from the researcher's decisions, then PREREGISTRATION.md,
+# this file, and the code are committed together as Commit 1.
+
+run_id: R1
+volume_name: operator-probe          # Modal volume holding corpus cache + arrays
+volume_root: /vol                    # mount point inside Modal containers
+
+corpus:
+  name: wikipedia
+  hf_dataset: wikimedia/wikipedia
+  hf_config: 20231101.en
+  revision: null                     # PREREG: dataset revision hash
+  text_field: text
+  id_field: id
+  title_field: title
+  # Mechanical cleaning, applied in this order to every article. Each filter
+  # is defined in opprobe/corpus.py and must be listed in PREREGISTRATION.md.
+  # No filter refers to the meaning or function of the target.
+  filters: null                      # PREREG: e.g. [truncate_tail_sections, drop_table_lines, drop_heading_lines]
+  tail_section_headings: null        # PREREG: exact heading lines that end the article body
+  heading_max_words: null            # PREREG: used only if drop_heading_lines is listed
+
+model:
+  hf_id: google/gemma-2-2b           # loaded via water_tool.core.model.load()
+  revision: null                     # PREREG: model commit hash; asserted at load time
+  n_hidden_states: 27                # hidden_states[0] = embedding output; [L+1] = output of block L
+  d_model: 2304
+  prepend_bos: true                  # existing Water Pattern convention (tokenizer default)
+
+target:
+  name: therefore
+  surface_forms: [therefore]         # lowercase only; "Therefore" excluded as a distinct token
+  # Whole-word rule: regex used to find occurrences in cleaned text.
+  whole_word_regex: null             # PREREG
+  # Whether an occurrence must be preceded by a single ASCII space so the
+  # model sees the " therefore" token (not the no-space "therefore" token).
+  require_leading_space: null        # PREREG (part of the whole-word rule)
+
+control:
+  name: chair
+  surface_forms: [chair]
+  whole_word_regex: null             # PREREG: same rule as target, applied to "chair"
+  require_leading_space: null        # PREREG
+  seed: null                         # PREREG: control seed
+  n: null                            # PREREG: control N ("sampled identically" -> 500?)
+
+sampling:
+  method: reservoir_algorithm_R
+  main_seed: null                    # PREREG
+  main_n: 500
+  pilot_seed: null                   # PREREG
+  pilot_n: 30
+  # Disjointness: the main reservoir runs over the occurrence stream with the
+  # pilot occurrences removed.
+  main_excludes_pilot: true
+  # Instances with fewer left-context tokens than the window: keep with all
+  # available context, or exclude before sampling.
+  short_context_policy: null         # PREREG: keep | exclude
+  following_clause_terminators: ".!?;:\n"
+  following_clause_max_chars: 400
+
+calibration:
+  ladder: null                       # PREREG: left-context lengths in tokens, ascending
+  stability_measure: null            # PREREG: cosine_to_max | relative_l2_to_max
+  aggregate_over_instances: null     # PREREG: median | mean | min
+  plateau_threshold: null            # PREREG
+  plateau_layers: null               # PREREG: hidden-state indices the criterion must hold on, e.g. all 0..26
+  # Plateau rule as implemented: smallest rung w such that, for every layer in
+  # plateau_layers, aggregate stability >= plateau_threshold at w and at every
+  # larger rung.
+  fixed_window: null                 # written ONLY from the committed calibration result (Commit 2)
+
+baseline:
+  unit: token_position               # uniform over token positions of the cleaned corpus
+  exclude_token_ids_of: [target, control]
+  n: null                            # PREREG
+  seed: null                         # PREREG
+
+capture:
+  dtype_store: float16
+  batch_size: 16
+  top_k_next: 50
+  entropy_base: e                    # nats
+
+readouts:
+  # Covariance PR subtracts the cloud's own mean, so it is identical for raw
+  # and baseline-centered states. second_moment PR uses the uncentered
+  # second-moment matrix about the origin (raw) or about the baseline mean
+  # (centered), which is where raw and centered differ.
+  pr_matrix: null                    # PREREG: covariance | second_moment | both
+  saturation_seed: null              # PREREG (HANDOFF Step 5 "own seed")
+  saturation_step: 1
+
+rendering:
+  per_layer_normalization: null      # PREREG: e.g. divide each layer's centered states by that layer's RMS norm over target instances
+  pca_components: 3
+  film_a_layers: null                # PREREG: hidden-state indices
+  film_b_subframes: null             # PREREG: interpolation subframes between consecutive layers
+  film_a_shuffle_seed: null          # PREREG
+  film_c_permutation_seed: null      # PREREG
+  film_c_distance: null              # PREREG: euclidean | cosine (on centered, normalized states)
+  mp4_fps: 12
+
+language_lint:
+  # Phrases that must not appear in any generated caption, log, or README.
+  banned: [move toward, moves toward, moving toward, decide, decides, deciding,
+           converge, converges, converging, convergence, deliberat, trajectory,
+           trajectories, evolve, evolves, develop, develops, settles on,
+           settles into, journey, arrives at, reaches a, chooses, makes up its mind]
