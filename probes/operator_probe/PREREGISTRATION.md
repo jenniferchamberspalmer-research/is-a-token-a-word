@@ -22,9 +22,10 @@ What structure, if any, does the cloud of residual states at the target position
 - Stream order: parquet files in sorted filename order, rows in file order, occurrences in character order.
 - Following clause (metadata for human reading only): text after the target up to and including the first of . ! ? ; : or newline, capped at 400 characters.
 - Sampling method: seeded reservoir sampling, uniform over occurrences
-- Main seed:
+- Seed derivation (all seeds in this run): each seed is the first 4 bytes, read as a big-endian unsigned integer, of SHA-256 of the string `operator-probe|R1|therefore|wikimedia/wikipedia|20231101.en|<role>`. Roles: main, pilot, control, baseline, saturation, film_a_shuffle, film_c_permutation. Seeds are fixed by run identity, not chosen, and are recorded before any data is pulled.
+- Main seed: 3286478376
 - Main N: 500
-- Pilot seed:
+- Pilot seed: 3104777288
 - Pilot n: 30
 
 ## Window calibration
@@ -36,21 +37,21 @@ What structure, if any, does the cloud of residual states at the target position
 - Model and revision: Gemma 2 2B (google/gemma-2-2b, base), loaded by water_tool.core.model.load(); revision hash:
 - Hidden-state convention: 27 states (embedding + 26 layers)
 - Multi-token rule: final subtoken position
-- Baseline: N non-target positions = 2000, uniform over all token positions of the cleaned corpus (Algorithm L reservoir), excluding positions whose token id is a "therefore" or "chair" form; window construction identical to the target; seed =
+- Baseline: N non-target positions = 2000, uniform over all token positions of the cleaned corpus (Algorithm L reservoir), excluding positions whose token id is a "therefore" or "chair" form; window construction identical to the target; seed = 447242590
 - Control: "chair" (primary content-word control from prior studies), sampled identically: same whole-word rule with "chair", N = 500, the window fixed by the "therefore" pilot calibration (no separate pilot)
-- Control seed:
+- Control seed: 3094215901
 
 ## Rendering
 - Per-layer normalization: after baseline centering, divide each hidden state's centered vectors by that hidden state's RMS norm over the cloud's instances (one scalar per hidden state)
 - Projection: single PCA, 3 components, fit once on pooled centered states
 - Layers shown in Film A: hidden-state indices 0, 7, 13, 20, 26 (index 0 = embedding output, index L+1 = output of block L)
 - Interpolation subframes in Film B: 10 (display-only, labelled as not measured)
-- Shuffle seed (Film A) and permutation seed (Film C):
+- Shuffle seed (Film A) and permutation seed (Film C): 2459750334 and 1702731698
 - Film C distance: Euclidean, on baseline-centered, per-layer-normalized states (centering does not change Euclidean distance; stated here so it is not read otherwise)
 
 ## Readouts
 - Participation ratio per layer (raw and centered, target and control), computed two ways: covariance (mean-subtracted; identical for raw and centered by construction, and checked) and second moment (about the origin for raw, about the baseline mean for centered)
-- Saturation curve per layer; instance order seed =
+- Saturation curve per layer; instance order seed = 1645421784
 - Next-token entropy distribution (nats, from Gemma's soft-capped logits at the target position)
 
 ## Commitments

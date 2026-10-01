@@ -238,3 +238,20 @@ def test_language_lint(tmp_path):
     p.write_text("the cloud converges on a reading\nlegibility by depth\n")
     hits = checks.language_lint([p], config.load()["language_lint"]["banned"])
     assert hits and all(":1:" in h for h in hits)
+
+
+def test_seed_derivation():
+    import hashlib
+    cfg = config.load()
+    derive = lambda role: int.from_bytes(hashlib.sha256(
+        f"operator-probe|R1|therefore|wikimedia/wikipedia|20231101.en|{role}".encode()).digest()[:4], "big")
+    assert cfg["sampling"]["main_seed"] == derive("main")
+    assert cfg["sampling"]["pilot_seed"] == derive("pilot")
+    assert cfg["control"]["seed"] == derive("control")
+    assert cfg["baseline"]["seed"] == derive("baseline")
+    assert cfg["readouts"]["saturation_seed"] == derive("saturation")
+    assert cfg["rendering"]["film_a_shuffle_seed"] == derive("film_a_shuffle")
+    assert cfg["rendering"]["film_c_permutation_seed"] == derive("film_c_permutation")
+    prereg = config.PREREG_PATH.read_text()
+    for role in ("main", "pilot", "control", "baseline", "saturation", "film_a_shuffle", "film_c_permutation"):
+        assert str(derive(role)) in prereg, role

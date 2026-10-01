@@ -47,14 +47,17 @@ control:
   surface_forms: [chair]
   whole_word_regex: '(?<![\w''’-])chair(?![\w''’-])'
   require_leading_space: true
-  seed: null                         # PREREG: control seed
+  seed: 3094215901
   n: 500
 
+# Seeds: first 4 bytes (big-endian) of SHA-256 of
+# 'operator-probe|R1|therefore|wikimedia/wikipedia|20231101.en|<role>'.
+# Checked by tests/test_offline.py::test_seed_derivation.
 sampling:
   method: reservoir_algorithm_R
-  main_seed: null                    # PREREG
+  main_seed: 3286478376
   main_n: 500
-  pilot_seed: null                   # PREREG
+  pilot_seed: 3104777288
   pilot_n: 30
   # Disjointness: the main reservoir runs over the occurrence stream with the
   # pilot occurrences removed.
@@ -80,7 +83,7 @@ baseline:
   unit: token_position               # uniform over token positions of the cleaned corpus
   exclude_token_ids_of: [target, control]
   n: 2000
-  seed: null                         # PREREG
+  seed: 447242590
 
 capture:
   dtype_store: float16
@@ -94,7 +97,7 @@ readouts:
   # second-moment matrix about the origin (raw) or about the baseline mean
   # (centered), which is where raw and centered differ.
   pr_matrix: both
-  saturation_seed: null              # PREREG (HANDOFF Step 5 "own seed")
+  saturation_seed: 1645421784
   saturation_step: 1
 
 rendering:
@@ -102,8 +105,8 @@ rendering:
   pca_components: 3
   film_a_layers: [0, 7, 13, 20, 26]   # hidden-state indices
   film_b_subframes: 10
-  film_a_shuffle_seed: null          # PREREG
-  film_c_permutation_seed: null      # PREREG
+  film_a_shuffle_seed: 2459750334
+  film_c_permutation_seed: 1702731698
   film_c_distance: euclidean
   mp4_fps: 12
 
