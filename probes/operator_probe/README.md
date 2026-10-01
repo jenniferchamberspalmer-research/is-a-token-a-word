@@ -35,6 +35,10 @@ modal run probes/operator_probe/modal_run.py::capture     # main + control + bas
 modal run probes/operator_probe/modal_run.py::render      # readouts + films -> runs/R1/, Commit 3
 ```
 
+From a phone: GitHub → Actions → "Operator probe" → Run workflow (`.github/workflows/operator-probe.yml` on `main`)
+runs the same stages on Modal and commits their outputs back to the chosen branch:
+`revisions`, `pull-calibrate` (Commit 2 contents), `capture-render` (Commit 3 contents).
+
 Every data stage refuses to start while any pre-registered value is blank, or while the probe
 code, config, or pre-registration has uncommitted changes. Each log records the code commit.
 

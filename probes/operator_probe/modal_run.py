@@ -192,7 +192,11 @@ def resolve_revisions() -> dict:
 
 @app.local_entrypoint()
 def revisions():
-    print(json.dumps(resolve_revisions.remote(), indent=2, ensure_ascii=False))
+    res = resolve_revisions.remote()
+    out = _local_run_dir() / "revisions.json"
+    out.write_text(json.dumps(res, indent=2, ensure_ascii=False))
+    print(json.dumps(res, indent=2, ensure_ascii=False))
+    print(f"wrote {out}")
 
 
 # ------------------------------------------------------------------ stage 1-2: pull
