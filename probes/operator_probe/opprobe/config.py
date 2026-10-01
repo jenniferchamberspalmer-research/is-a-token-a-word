@@ -41,17 +41,19 @@ def null_fields(cfg: dict) -> list[str]:
 
 
 def blank_prereg_fields(path: str | Path = PREREG_PATH) -> list[str]:
-    """Lines of the form '- Label: ' (or with an empty '= ;' slot) that
-    carry no value."""
+    """Bullet lines that end in ':' or '=' (an empty slot), or carry an
+    empty '= ;' slot. A line ending in ':' that introduces an indented
+    list is not blank."""
+    lines = Path(path).read_text().splitlines()
     blanks = []
-    for line in Path(path).read_text().splitlines():
+    for i, line in enumerate(lines):
         s = line.strip()
-        if not s.startswith("- ") or ":" not in s:
+        if not s.startswith("- "):
             continue
-        label, _, value = s[2:].partition(":")
-        value = value.strip()
-        if not value or re.search(r"=\s*(;|$)", value):
-            blanks.append(label.strip())
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        introduces_list = s.endswith(":") and nxt.startswith("  ") and nxt.strip()
+        if (s.endswith((":", "=")) and not introduces_list) or re.search(r"=\s*;", s):
+            blanks.append(s[2:])
     return blanks
 
 

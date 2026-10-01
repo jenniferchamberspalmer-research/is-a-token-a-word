@@ -21,9 +21,10 @@ corpus:
   # Mechanical cleaning, applied in this order to every article. Each filter
   # is defined in opprobe/corpus.py and must be listed in PREREGISTRATION.md.
   # No filter refers to the meaning or function of the target.
-  filters: null                      # PREREG: e.g. [truncate_tail_sections, drop_table_lines, drop_heading_lines]
-  tail_section_headings: null        # PREREG: exact heading lines that end the article body
-  heading_max_words: null            # PREREG: used only if drop_heading_lines is listed
+  filters: [truncate_tail_sections, drop_table_lines, drop_heading_lines]
+  tail_section_headings: [References, See also, External links, Further reading, Notes,
+                          Bibliography, Sources, Citations, Footnotes, Works cited]
+  heading_max_words: 12
 
 model:
   hf_id: google/gemma-2-2b           # loaded via water_tool.core.model.load()
@@ -36,18 +37,18 @@ target:
   name: therefore
   surface_forms: [therefore]         # lowercase only; "Therefore" excluded as a distinct token
   # Whole-word rule: regex used to find occurrences in cleaned text.
-  whole_word_regex: null             # PREREG
+  whole_word_regex: '(?<![\w''’-])therefore(?![\w''’-])'
   # Whether an occurrence must be preceded by a single ASCII space so the
   # model sees the " therefore" token (not the no-space "therefore" token).
-  require_leading_space: null        # PREREG (part of the whole-word rule)
+  require_leading_space: true
 
 control:
   name: chair
   surface_forms: [chair]
-  whole_word_regex: null             # PREREG: same rule as target, applied to "chair"
-  require_leading_space: null        # PREREG
+  whole_word_regex: '(?<![\w''’-])chair(?![\w''’-])'
+  require_leading_space: true
   seed: null                         # PREREG: control seed
-  n: null                            # PREREG: control N ("sampled identically" -> 500?)
+  n: 500
 
 sampling:
   method: reservoir_algorithm_R
@@ -60,16 +61,16 @@ sampling:
   main_excludes_pilot: true
   # Instances with fewer left-context tokens than the window: keep with all
   # available context, or exclude before sampling.
-  short_context_policy: null         # PREREG: keep | exclude
+  short_context_policy: keep
   following_clause_terminators: ".!?;:\n"
   following_clause_max_chars: 400
 
 calibration:
-  ladder: null                       # PREREG: left-context lengths in tokens, ascending
-  stability_measure: null            # PREREG: cosine_to_max | relative_l2_to_max
-  aggregate_over_instances: null     # PREREG: median | mean | min
-  plateau_threshold: null            # PREREG
-  plateau_layers: null               # PREREG: hidden-state indices the criterion must hold on, e.g. all 0..26
+  ladder: [8, 16, 32, 64, 128, 256, 512]
+  stability_measure: cosine_to_max
+  aggregate_over_instances: median
+  plateau_threshold: 0.95
+  plateau_layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
   # Plateau rule as implemented: smallest rung w such that, for every layer in
   # plateau_layers, aggregate stability >= plateau_threshold at w and at every
   # larger rung.
@@ -78,7 +79,7 @@ calibration:
 baseline:
   unit: token_position               # uniform over token positions of the cleaned corpus
   exclude_token_ids_of: [target, control]
-  n: null                            # PREREG
+  n: 2000
   seed: null                         # PREREG
 
 capture:
@@ -92,18 +93,18 @@ readouts:
   # and baseline-centered states. second_moment PR uses the uncentered
   # second-moment matrix about the origin (raw) or about the baseline mean
   # (centered), which is where raw and centered differ.
-  pr_matrix: null                    # PREREG: covariance | second_moment | both
+  pr_matrix: both
   saturation_seed: null              # PREREG (HANDOFF Step 5 "own seed")
   saturation_step: 1
 
 rendering:
-  per_layer_normalization: null      # PREREG: e.g. divide each layer's centered states by that layer's RMS norm over target instances
+  per_layer_normalization: layer_rms  # divide each layer's centered states by that layer's RMS norm over instances
   pca_components: 3
-  film_a_layers: null                # PREREG: hidden-state indices
-  film_b_subframes: null             # PREREG: interpolation subframes between consecutive layers
+  film_a_layers: [0, 7, 13, 20, 26]   # hidden-state indices
+  film_b_subframes: 10
   film_a_shuffle_seed: null          # PREREG
   film_c_permutation_seed: null      # PREREG
-  film_c_distance: null              # PREREG: euclidean | cosine (on centered, normalized states)
+  film_c_distance: euclidean
   mp4_fps: 12
 
 language_lint:
